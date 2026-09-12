@@ -1,0 +1,3 @@
+#!/bin/sh
+# 提交成功后销票：每笔提交都要有当次新鲜的两张票（用完即销，防止旧票被复用）
+node scripts/gate.mjs reset

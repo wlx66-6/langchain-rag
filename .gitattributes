@@ -1,0 +1,3 @@
+# 统一换行符：脚本和 git 钩子必须保持 LF（Windows 的 CRLF 可能破坏 shebang / 钩子执行）
+.githooks/** text eol=lf
+*.sh text eol=lf

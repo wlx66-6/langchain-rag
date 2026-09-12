@@ -1,0 +1,9 @@
+#!/bin/sh
+# 存档门禁：单元测试 + 质量检查 都通过才放行
+node scripts/gate.mjs check || {
+  echo ""
+  echo "⛔ 存档被拦截：单元测试或质量检查未通过（或结果已过期）。"
+  echo "   请先让 gitcommit-agent 并行跑 tester 与 quality-engineer。"
+  echo "   （紧急情况可用：git commit --no-verify 跳过，慎用）"
+  exit 1
+}

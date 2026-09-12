@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+backend/data/
+
+# 环境变量（含密钥，切勿提交）
+.env
+backend/.env
+
+# 前端
+node_modules/
+frontend/dist/
+
+# 其他
+.DS_Store
+*.log
+.idea/
+.vscode/
+
+# 质量门禁「通过票」（提交前自动重新生成，勿入库）
+.claude/gates/
