@@ -7,6 +7,7 @@ from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 
 from app.config import settings
+from app.services.mock_llm import MockChatModel
 from app.services.vectorstore import get_vectorstore
 
 # 追问改写提示词：把「它多少钱」这种缺少主语的追问，结合上文还原成完整问题
@@ -40,8 +41,10 @@ _ANSWER_PROMPT = ChatPromptTemplate.from_messages(
 )
 
 
-def get_llm(streaming: bool = True) -> ChatTongyi:
-    """创建通义千问（百炼）大模型实例。API Key 通过环境变量自动读取。"""
+def get_llm(streaming: bool = True):
+    """创建大模型实例：压测（MOCK_LLM=1）时用假模型，正常用通义千问（百炼）。"""
+    if settings.mock_llm:
+        return MockChatModel()
     return ChatTongyi(model=settings.qwen_model, streaming=streaming, temperature=0.3)
 
 
@@ -55,8 +58,8 @@ def _format_history(history: list[dict]) -> str:
 
 
 async def rewrite_question(question: str, history: list[dict]) -> str:
-    """多轮追问时，把问题结合上下文改写成完整问题；无历史则原样返回。"""
-    if not history:
+    """多轮追问时，把问题结合上下文改写成完整问题；无历史（或压测假模式）则原样返回。"""
+    if settings.mock_llm or not history:
         return question
     llm = get_llm(streaming=False)
     chain = _CONTEXTUALIZE_PROMPT | llm
@@ -108,25 +111,35 @@ def _rerank(question: str, docs_with_score: list[tuple[Document, float]]) -> lis
             return _dedup(docs_with_score)
 
         results = getattr(getattr(resp, "output", None), "results", None) or []
-        kept: list[tuple[int, float]] = []
+        # 先把所有候选按相关度从高到低排好（含不及格的，留作兜底用）
+        scored: list[tuple[int, float]] = []
         for r in results:
             idx = r["index"] if isinstance(r, dict) else r.index
             score = r["relevance_score"] if isinstance(r, dict) else r.relevance_score
-            score = float(score or 0.0)
-            if score >= settings.rerank_min_score:
-                kept.append((idx, score))
-        # 按相关度从高到低排序，最多保留 rerank_top_n 条
-        kept.sort(key=lambda item: item[1], reverse=True)
+            scored.append((idx, float(score or 0.0)))
+        scored.sort(key=lambda item: item[1], reverse=True)
+        if not scored:
+            return _dedup(docs_with_score)  # 重排没给出任何分数，退回原始顺序
+        # 及格（≥rerank_min_score）的才保留，最多 rerank_top_n 条
+        kept = [(idx, s) for idx, s in scored if s >= settings.rerank_min_score]
+        if not kept:
+            # 兜底：及格线筛空时，也要留下最相关的第一名，避免「有答案却说找不到」
+            kept = scored[:1]
         kept = kept[: settings.rerank_top_n]
-        return _dedup([(docs_with_score[idx][0], score) for idx, score in kept])
+        return _dedup([(docs_with_score[idx][0], s) for idx, s in kept])
     except Exception:
         return _dedup(docs_with_score)
 
 
 def retrieve_with_rerank(question: str) -> list[tuple[Document, float]]:
-    """检索 + 重排的完整流程：先海选候选 → 去重 → 精读打分筛选，返回最贴题的几段。"""
-    candidates = retrieve(question, k=settings.rerank_candidates)
-    return _rerank(question, _dedup(candidates))
+    """检索 + 重排的完整流程：先海选候选 → 去重 → 精读打分筛选，返回最贴题的几段。
+
+    压测假模式（MOCK_LLM=1）下跳过远程重排，直接把词向量检索结果去重后截取前 top_k 段。
+    """
+    candidates = _dedup(retrieve(question, k=settings.rerank_candidates))
+    if settings.mock_llm:
+        return candidates[: settings.top_k]
+    return _rerank(question, candidates)
 
 
 def format_context(docs_with_score: list[tuple[Document, float]]) -> str:

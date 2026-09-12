@@ -1,0 +1,2 @@
+# 压测依赖：Locust（Python 写的开箱即用压测工具）
+locust

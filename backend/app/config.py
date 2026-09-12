@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     rerank_top_n: int = 3                 # 重排后最多保留几条引用
     rerank_min_score: float = 0.2         # 相关度及格线（低于此分视为不相关）
 
+    # ---- 压测开关 ----
+    # 置为 True 时（启动前设环境变量 MOCK_LLM=1），问答接口改用「假大模型 + 跳过远程重排」，
+    # 只跑本地骨架（SQLite + 词向量 + Chroma 检索），用于压力测试，不花钱、不碰百炼。日常保持 False。
+    mock_llm: bool = False
+
     # ---- HuggingFace 下载镜像（国内访问 huggingface.co 慢，默认走镜像加速） ----
     hf_endpoint: str = "https://hf-mirror.com"
 
