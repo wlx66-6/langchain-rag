@@ -8,7 +8,7 @@
 
 ![backend coverage](https://img.shields.io/badge/backend%20coverage-89%25-brightgreen)
 ![frontend coverage](https://img.shields.io/badge/frontend%20coverage-97%25-brightgreen)
-![tests](https://img.shields.io/badge/tests-210%20passed-brightgreen)
+![tests](https://img.shields.io/badge/tests-214%20passed-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-blue)
 
 > 徽章里的数字对应实测值，改代码后请同步更新（见「测试与质量」）。
@@ -84,7 +84,7 @@
 | 关系库 | SQLite + SQLAlchemy 2.x | WAL 模式 + busy_timeout + pool_pre_ping |
 | 鉴权 | PyJWT + bcrypt | JWT 双令牌；bcrypt 前做 SHA256 预哈希 |
 | 前端 | React 18 · TypeScript · Vite | 无组件库，自建轻量 toast/确认框 |
-| 后端测试 | pytest · pytest-cov · httpx | 125 用例 + 8 集成例（默认跳过） |
+| 后端测试 | pytest · pytest-cov · httpx | 129 用例 + 8 集成例（默认跳过） |
 | 前端测试 | Vitest · Testing Library · jsdom | 85 用例，覆盖率阈值 60% |
 | 代码规范 | ruff（lint + format）· ESLint · Prettier | 见 `backend/pyproject.toml`、`frontend/eslint.config.js` |
 | 压测 | Locust | 支持 mock / real 两模式 |
@@ -184,7 +184,7 @@ npm run dev
 
 | 项目 | 数值 | 复现命令 |
 |---|---|---|
-| 后端单元测试 | **125 passed**（另 8 个集成/e2e 用例默认跳过） | `pytest -q` |
+| 后端单元测试 | **129 passed**（另 8 个集成/e2e 用例默认跳过） | `pytest -q` |
 | 后端覆盖率 | **89%**（关键模块：`core/security` 100%、`routers/auth` 100%、`services/rag` 92%） | `pytest --cov=app --cov-report=term-missing` |
 | 前端单元测试 | **85 passed**（13 个测试文件） | `npm test` |
 | 前端覆盖率 | **语句 97.5% / 分支 87%** | `npm run test:coverage` |

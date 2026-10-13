@@ -49,6 +49,11 @@
   SSE 路径遇 401 走刷新流程而非直接跳登录。
 - **前端交互**：`window.alert/confirm` 替换为自建轻量 toast / 确认框；
   统一 `catch (err: unknown)`，不再空吞异常。
+- **`/docs` 的 Authorize 按钮不可用**：鉴权依赖原先声明为 OAuth2 密码流
+  （`OAuth2PasswordBearer(tokenUrl="/api/auth/login")`），Swagger 会按表单去调登录接口，
+  而该接口只接受 JSON body，必然返回 422——文档里给的调试入口等于是坏的。
+  改用 `HTTPBearer` 后，Authorize 变成「粘贴 access_token」，与实际鉴权方式一致；
+  并新增用例锁定该契约，防止回归。
 
 ### Changed
 

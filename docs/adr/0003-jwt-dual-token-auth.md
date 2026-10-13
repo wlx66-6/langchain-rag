@@ -18,6 +18,12 @@
   仅用于换取新的 access token。
 - 令牌内用 `type` 声明区分 `access` / `refresh`，后端校验时**严格比对类型**，
   防止用 refresh token 直接访问业务接口（见 `app/core/deps.py`）。
+- OpenAPI 里的鉴权方案声明为 **HTTP Bearer**（`HTTPBearer`），而**不用** FastAPI 更常见的
+  `OAuth2PasswordBearer`：后者会在 `/docs` 声明一条「OAuth2 密码流」，诱导 Swagger 的
+  Authorize 按钮以 **`x-www-form-urlencoded` 表单**去调 `tokenUrl`，而本项目登录接口收的是
+  **JSON body**，两者对不上，Authorize 按钮必然返回 422——文档里给的调试入口等于是坏的。
+  `HTTPBearer` 对应「粘贴一个 access_token」，与实际鉴权方式一致。
+- 缺少凭据时统一返回 **401**（而非 `HTTPBearer` 默认的 403），并带 `WWW-Authenticate: Bearer`。
 - 密码用 **bcrypt** 存储；由于 bcrypt 只处理 72 字节以内输入，而中文密码每字 3 字节，
   故先做一次 **SHA256 摘要再交给 bcrypt**（`app/core/security.py` 的 `_prehash`）。
 - `jwt_secret` **不设默认值**：缺失时启动直接报错并提示生成方式
