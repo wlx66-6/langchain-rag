@@ -1,5 +1,5 @@
 # Locust 压测自动生成的中间产物，不入库（随时可重跑 locust 重新生成）
 __pycache__/
 *.log
-smoke.html
-smoke_*.csv
+report_*.html
+results_*.csv
