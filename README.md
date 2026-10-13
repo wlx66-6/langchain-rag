@@ -165,6 +165,16 @@ npm run dev
 - **端口被占用**：改 `start.bat` 的 `--port` 与 `frontend/vite.config.ts`。
 - **换更便宜/更强的模型**：改 `.env` 的 `QWEN_MODEL`（`qwen-turbo` / `qwen-plus` / `qwen-max`）。
 - **后端报「缺少必填配置 JWT_SECRET」**：按提示生成随机串写入 `backend/.env`。
+- **报错提示某列不存在（如 `no such column: stored_path`）**：本项目**没有引入数据库迁移工具**，
+  ORM 模型加字段后，旧库不会被自动改造。删除 **旧的开发库** 让其按新模型重建即可
+  （会丢失已有的会话/文档记录，开发期数据可重灌）：
+
+  ```bash
+  # 从仓库根目录执行；务必先确认这是你自己的开发库
+  rm backend/data/app.db
+  ```
+
+  相关取舍见 [ADR-0002](docs/adr/0002-sqlite-and-vector-store.md)。
 
 ---
 
