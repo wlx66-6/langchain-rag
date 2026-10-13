@@ -1,0 +1,33 @@
+# EditorConfig：统一各编辑器的基础风格（https://editorconfig.org）
+#
+# 注意：代码风格真正的强制者是 ruff（Python）与 Prettier（前端），
+# 这里只约束那些格式化工具管不到的地方（换行符、文件末尾空行、缩进等），
+# 保证「用 VSCode / PyCharm / Vim 打开都长一样」。
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_size = 4
+max_line_length = 100
+
+[*.{md,markdown}]
+# Markdown 行尾的两个空格是有语义的（表示强制换行），不能删
+trim_trailing_whitespace = false
+
+[*.{bat,cmd}]
+# Windows 批处理文件必须用 CRLF，否则部分命令解析会出错
+end_of_line = crlf
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab

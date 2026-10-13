@@ -1,0 +1,70 @@
+# 持续集成：每次 push / PR 自动跑「格式 + 静态检查 + 单元测试 + 构建」。
+#
+# 本仓库当前托管在 Gitee，该工作流是通用定义（GitHub Actions 语法，也是多数托管平台
+# 与自建 runner 的通用做法）。在不跑托管 CI 的环境下，用 `bash scripts/ci.sh`
+# 可在本地复现完全相同的检查步骤。
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  backend:
+    name: 后端（ruff + pytest）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # 代码兼容 3.10+，CI 用 3.12 做稳定性基线
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: 安装依赖
+        run: pip install -r requirements-dev.txt
+
+      - name: 格式检查（ruff format --check）
+        run: ruff format --check .
+
+      - name: 静态检查（ruff check）
+        run: ruff check .
+
+      - name: 单元测试 + 覆盖率（pytest）
+        run: pytest --cov=app --cov-report=term-missing --cov-fail-under=70
+
+  frontend:
+    name: 前端（lint + test + build）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 格式检查（prettier --check）
+        run: npm run format:check
+
+      - name: 静态检查（eslint）
+        run: npm run lint
+
+      - name: 单元测试 + 覆盖率（vitest）
+        run: npm run test:coverage
+
+      - name: 类型检查与生产构建（tsc + vite build）
+        run: npm run build

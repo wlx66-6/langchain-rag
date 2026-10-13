@@ -1,3 +1,27 @@
-# 统一换行符：脚本和 git 钩子必须保持 LF（Windows 的 CRLF 可能破坏 shebang / 钩子执行）
+# 仓库内统一以 LF 存储，检出时不转换：
+# 避免 Windows 的 core.autocrlf 把 CRLF 带进 diff，也避免破坏 ruff/prettier 的格式检查。
+* text=auto eol=lf
+
+# 脚本和 git 钩子必须保持 LF（Windows 的 CRLF 可能破坏 shebang / 钩子执行）
 .githooks/** text eol=lf
 *.sh text eol=lf
+
+# Windows 批处理反过来必须 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制文件不做换行符转换，也不参与文本 diff
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.zip binary
+*.safetensors binary
+*.bin binary
+
+# 生成物：在代码托管平台折叠展示，减少 review 噪音
+frontend/package-lock.json linguist-generated=true
