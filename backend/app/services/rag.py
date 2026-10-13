@@ -77,12 +77,20 @@ def retrieve(question: str, k: int | None = None) -> list[tuple[Document, float]
 
 
 def _dedup(docs_with_score: list[tuple[Document, float]]) -> list[tuple[Document, float]]:
-    """去掉内容完全一样的片段（对应「同一份文件传了两次」导致的重复引用）。"""
-    seen: set[str] = set()
+    """去掉完全重复的片段（对应「同一份文件传了两次」导致的重复引用）。
+
+    去重键必须带上来源：不同文件里出现一模一样的句子是很常见的情况
+    （例如两份文档都写了同一句售后条款），只按内容去重会把来自另一份资料的
+    引用误删掉。只有「来源 + 内容」都相同才算重复。
+    """
+    seen: set[tuple[str, str]] = set()
     out: list[tuple[Document, float]] = []
     for doc, score in docs_with_score:
-        key = doc.page_content.strip()
-        if not key or key in seen:
+        content = doc.page_content.strip()
+        if not content:
+            continue
+        key = (doc.metadata.get("source", ""), content)
+        if key in seen:
             continue
         seen.add(key)
         out.append((doc, score))

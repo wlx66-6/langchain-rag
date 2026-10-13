@@ -62,10 +62,18 @@ class TestDedup:
         assert out[0][0].page_content == "内容A"
         assert out[1][0].page_content == "内容B"
 
-    def test_keeps_first_occurrence(self):
-        out = _dedup([(_doc("重复", "a.txt"), 0.1), (_doc("重复", "b.txt"), 0.9)])
+    def test_keeps_first_occurrence_within_same_source(self):
+        """同一份文件里的重复片段只留第一处。"""
+        out = _dedup([(_doc("重复", "a.txt"), 0.1), (_doc("重复", "a.txt"), 0.9)])
         assert len(out) == 1
         assert out[0][0].metadata["source"] == "a.txt"
+
+    def test_same_content_from_different_sources_both_kept(self):
+        """不同文件里出现一模一样的句子是常见的（例如两份文档写了同一句售后条款），
+        不能因为内容相同就把其中一份的引用删掉。"""
+        out = _dedup([(_doc("重复", "a.txt"), 0.1), (_doc("重复", "b.txt"), 0.9)])
+        assert len(out) == 2
+        assert [d.metadata["source"] for d, _ in out] == ["a.txt", "b.txt"]
 
     def test_skips_whitespace_only(self):
         out = _dedup([(_doc("   "), 0.1), (_doc("内容"), 0.2)])

@@ -68,7 +68,7 @@ class TestRerankFallback:
 
 class TestRerankFallbackPaths:
     def test_status_not_ok_returns_dedup_original(self, monkeypatch):
-        docs = [(_doc("重复内容", "a.txt"), 0.5), (_doc("重复内容", "b.txt"), 0.5), (_doc("独有内容", "c.txt"), 0.5)]
+        docs = [(_doc("重复内容", "a.txt"), 0.5), (_doc("重复内容", "a.txt"), 0.5), (_doc("独有内容", "c.txt"), 0.5)]
         monkeypatch.setattr(dashscope.TextReRank, "call", lambda **kw: _Resp(500))
 
         out = _rerank("某问题", docs)
@@ -77,7 +77,7 @@ class TestRerankFallbackPaths:
         assert out[0][0].metadata["source"] == "a.txt"
 
     def test_no_scores_returned_returns_dedup_original(self, monkeypatch):
-        docs = [(_doc("重复内容", "a.txt"), 0.5), (_doc("重复内容", "b.txt"), 0.5)]
+        docs = [(_doc("重复内容", "a.txt"), 0.5), (_doc("重复内容", "a.txt"), 0.5)]
         monkeypatch.setattr(dashscope.TextReRank, "call", lambda **kw: _Resp(HTTPStatus.OK, []))
 
         out = _rerank("某问题", docs)
@@ -85,7 +85,7 @@ class TestRerankFallbackPaths:
         assert out[0][0].metadata["source"] == "a.txt"
 
     def test_exception_returns_dedup_original(self, monkeypatch):
-        docs = [(_doc("重复内容", "a.txt"), 0.5), (_doc("重复内容", "b.txt"), 0.5)]
+        docs = [(_doc("重复内容", "a.txt"), 0.5), (_doc("重复内容", "a.txt"), 0.5)]
 
         def boom(**kw):
             raise RuntimeError("网络挂了")

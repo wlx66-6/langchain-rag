@@ -46,6 +46,20 @@ class TestLoadFile:
         with pytest.raises(ValueError):
             load_file(p, "x.exe")
 
+    def test_gbk_text_falls_back_to_gbk_encoding(self, tmp_path):
+        # GBK 编码的中文文本用 UTF-8 读会报错，应自动回退到 GBK 而不是丢字
+        p = tmp_path / "gbk.txt"
+        p.write_bytes("续航 40 小时".encode("gbk"))
+        docs = load_file(p, "gbk.txt")
+        assert docs[0].page_content == "续航 40 小时"
+
+    def test_empty_text_logs_warning(self, tmp_path, caplog):
+        p = tmp_path / "空.txt"
+        p.write_text("   \n", encoding="utf-8")
+        with caplog.at_level("WARNING"):
+            load_file(p, "空.txt")
+        assert "内容为空" in caplog.text
+
 
 class TestLoadExcel:
     def test_loads_sheet_as_one_document(self, tmp_path):
