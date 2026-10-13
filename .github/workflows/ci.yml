@@ -30,11 +30,15 @@ jobs:
       - name: 安装依赖
         run: pip install -r requirements-dev.txt
 
-      - name: 格式检查（ruff format --check）
-        run: ruff format --check .
+      # ruff 配置在 backend/pyproject.toml；显式 --config 从仓库根跑，
+      # 好让 loadtest/ 下的 Python 脚本也走同一套规则（与 scripts/ci.sh 一致）
+      - name: 格式检查（ruff format --check，含 backend 与 loadtest）
+        working-directory: .
+        run: ruff format --check --config backend/pyproject.toml backend loadtest
 
-      - name: 静态检查（ruff check）
-        run: ruff check .
+      - name: 静态检查（ruff check，含 backend 与 loadtest）
+        working-directory: .
+        run: ruff check --config backend/pyproject.toml backend loadtest
 
       - name: 单元测试 + 覆盖率（pytest）
         run: pytest --cov=app --cov-report=term-missing --cov-fail-under=70

@@ -7,6 +7,7 @@
 每个「虚拟用户」会先登录拿令牌，然后按权重循环做三件事：
   提问（85%）、查会话列表（10%）、健康检查（5%）。
 """
+
 import itertools
 import json
 import os
@@ -92,7 +93,7 @@ class ShopUser(HttpUser):
                     if not line.startswith("data: "):
                         continue
                     try:
-                        event = json.loads(line[len("data: "):])
+                        event = json.loads(line[len("data: ") :])
                     except ValueError:
                         continue
                     if event.get("type") == "done":

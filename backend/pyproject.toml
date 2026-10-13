@@ -24,6 +24,12 @@ ignore = [
     "B008",  # FastAPI 的 Depends()/File() 必须写在默认值位置，是框架约定
 ]
 
+[tool.ruff.lint.isort]
+# 显式声明一方包，导入分组的判定就不依赖「从哪个目录调用 ruff」。
+# 不写这一句时，从仓库根跑 `ruff check --config backend/pyproject.toml backend`
+# 会把 app 误判成三方包，导致 I001 大面积误报。
+known-first-party = ["app"]
+
 [tool.ruff.lint.per-file-ignores]
 # 测试里为了方便常直接使用断言与内部函数，放宽部分规则
 "tests/**" = ["S101", "B011"]

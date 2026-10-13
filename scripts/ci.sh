@@ -23,11 +23,13 @@ fi
 
 step() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 
-step "后端：格式检查（ruff format --check）"
-(cd "$ROOT/backend" && "$PY" -m ruff format --check .)
+# ruff 的配置在 backend/pyproject.toml；用 --config 显式指定，好让 backend/ 之外的
+# Python（loadtest/ 下的压测与测量脚本）也走同一套规则，不留「没被 lint 过的角落」。
+step "Python：格式检查（ruff format --check，含 backend 与 loadtest）"
+"$PY" -m ruff format --check --config "$ROOT/backend/pyproject.toml" "$ROOT/backend" "$ROOT/loadtest"
 
-step "后端：静态检查（ruff check）"
-(cd "$ROOT/backend" && "$PY" -m ruff check .)
+step "Python：静态检查（ruff check，含 backend 与 loadtest）"
+"$PY" -m ruff check --config "$ROOT/backend/pyproject.toml" "$ROOT/backend" "$ROOT/loadtest"
 
 step "后端：单元测试 + 覆盖率（pytest，阈值 70%）"
 (cd "$ROOT/backend" && "$PY" -m pytest --cov=app --cov-report=term-missing --cov-fail-under=70)

@@ -7,6 +7,7 @@
 
 用法：python seed_users.py [数量，默认 100]
 """
+
 import sys
 
 import requests
