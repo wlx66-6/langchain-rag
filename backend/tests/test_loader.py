@@ -45,3 +45,45 @@ class TestLoadFile:
         p.write_text("x")
         with pytest.raises(ValueError):
             load_file(p, "x.exe")
+
+
+class TestLoadExcel:
+    def test_loads_sheet_as_one_document(self, tmp_path):
+        openpyxl = pytest.importorskip("openpyxl")
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "尺码表"
+        ws.append(["尺码", "身高"])
+        ws.append(["M", 170])
+        path = tmp_path / "尺码.xlsx"
+        wb.save(path)
+
+        docs = load_file(path, "尺码.xlsx")
+        assert len(docs) == 1
+        assert "尺码表" in docs[0].page_content
+        assert "M | 170" in docs[0].page_content
+
+    def test_blank_sheet_yields_no_document(self, tmp_path):
+        openpyxl = pytest.importorskip("openpyxl")
+        wb = openpyxl.Workbook()  # 默认空表，没有任何单元格
+        path = tmp_path / "空表.xlsx"
+        wb.save(path)
+
+        assert load_file(path, "空表.xlsx") == []
+
+
+class TestLoadCsv:
+    def test_loads_utf8_csv(self, tmp_path):
+        p = tmp_path / "颜色.csv"
+        p.write_text("颜色,库存\n黑色,10\n", encoding="utf-8")
+        docs = load_file(p, "颜色.csv")
+        assert len(docs) == 1
+        assert "黑色 | 10" in docs[0].page_content
+
+    def test_loads_gbk_csv(self, tmp_path):
+        # 中文 Windows 上导出的 CSV 常见 GBK 编码，应能自动识别
+        p = tmp_path / "gbk.csv"
+        p.write_bytes("尺码,身高\nL,175\n".encode("gbk"))
+        docs = load_file(p, "gbk.csv")
+        assert len(docs) == 1
+        assert "L | 175" in docs[0].page_content
