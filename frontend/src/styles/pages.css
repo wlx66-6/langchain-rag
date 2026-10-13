@@ -188,7 +188,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 .streaming-cursor::after {
-  content: "▍";
+  content: '▍';
   color: var(--primary);
   animation: blink 1s step-start infinite;
 }
@@ -363,7 +363,7 @@
   flex-wrap: wrap;
   margin-bottom: 24px;
 }
-.upload-zone input[type="file"] {
+.upload-zone input[type='file'] {
   font-size: 14px;
 }
 .upload-hint {

@@ -2,6 +2,7 @@
 
 检索/改写/生成全部由 `stub_rag` 打桩，不联网、不加载向量模型。
 """
+
 import json
 
 from app.models import Conversation
@@ -19,7 +20,7 @@ def _stream_chat(client, headers, content, conversation_id=None):
         assert resp.status_code == 200
         for line in resp.iter_lines():
             if line and line.startswith("data: "):
-                events.append(json.loads(line[len("data: "):]))
+                events.append(json.loads(line[len("data: ") :]))
     return events
 
 
@@ -44,7 +45,9 @@ class TestChatStream:
         sources = events[0]["data"]["sources"]
         assert sources[0]["source"] == "商品说明.txt"
 
-    def test_reuse_existing_conversation(self, client, normal_token, bearer, stub_rag, db_session, normal_user):
+    def test_reuse_existing_conversation(
+        self, client, normal_token, bearer, stub_rag, db_session, normal_user
+    ):
         conv = Conversation(user_id=normal_user.id, title="已有会话")
         db_session.add(conv)
         db_session.commit()
@@ -53,7 +56,9 @@ class TestChatStream:
         events = _stream_chat(client, bearer(normal_token), "再问一句", conversation_id=conv.id)
         assert events[0]["data"]["conversation_id"] == conv.id
 
-    def test_other_users_conversation_404(self, client, normal_token, bearer, stub_rag, db_session, admin_user):
+    def test_other_users_conversation_404(
+        self, client, normal_token, bearer, stub_rag, db_session, admin_user
+    ):
         conv = Conversation(user_id=admin_user.id, title="别人的")
         db_session.add(conv)
         db_session.commit()
@@ -71,7 +76,9 @@ class TestChatStream:
         assert r.status_code == 401
 
     def test_empty_content_rejected(self, client, normal_token, bearer):
-        r = client.post("/api/chat", json={"conversation_id": None, "content": ""}, headers=bearer(normal_token))
+        r = client.post(
+            "/api/chat", json={"conversation_id": None, "content": ""}, headers=bearer(normal_token)
+        )
         assert r.status_code == 422
 
 
@@ -80,7 +87,9 @@ class TestChatPersistence:
         events = _stream_chat(client, bearer(normal_token), "续航多久？")
         conv_id = events[0]["data"]["conversation_id"]
 
-        msgs = client.get(f"/api/conversations/{conv_id}/messages", headers=bearer(normal_token)).json()
+        msgs = client.get(
+            f"/api/conversations/{conv_id}/messages", headers=bearer(normal_token)
+        ).json()
         assert [m["role"] for m in msgs] == ["user", "assistant"]
         assert msgs[0]["content"] == "续航多久？"
 
@@ -88,7 +97,9 @@ class TestChatPersistence:
         events = _stream_chat(client, bearer(normal_token), "续航多久？")
         conv_id = events[0]["data"]["conversation_id"]
 
-        msgs = client.get(f"/api/conversations/{conv_id}/messages", headers=bearer(normal_token)).json()
+        msgs = client.get(
+            f"/api/conversations/{conv_id}/messages", headers=bearer(normal_token)
+        ).json()
         citations = json.loads(msgs[1]["citations"])
         assert citations[0]["source"] == "商品说明.txt"
 
@@ -132,7 +143,9 @@ class _PartialBoomChain:
 
 
 class TestChatFailure:
-    def test_generation_error_emits_error_event(self, client, normal_token, bearer, stub_rag, monkeypatch):
+    def test_generation_error_emits_error_event(
+        self, client, normal_token, bearer, stub_rag, monkeypatch
+    ):
         """生成阶段抛异常时，应向前端推一条 error 事件而不是让连接静默中断。"""
         from app.services import rag
 
@@ -156,7 +169,9 @@ class TestChatFailure:
         assert error["data"] == "回答生成失败，请稍后重试"
         assert secret not in json.dumps(events, ensure_ascii=False)
 
-    def test_failure_still_persists_assistant_message(self, client, normal_token, bearer, stub_rag, monkeypatch):
+    def test_failure_still_persists_assistant_message(
+        self, client, normal_token, bearer, stub_rag, monkeypatch
+    ):
         """生成失败也要落一条客服消息，避免会话里留下悬空的提问。"""
         from app.services import rag
 
@@ -165,10 +180,14 @@ class TestChatFailure:
         events = _stream_chat(client, bearer(normal_token), "会失败的问题")
         conv_id = events[0]["data"]["conversation_id"]
 
-        msgs = client.get(f"/api/conversations/{conv_id}/messages", headers=bearer(normal_token)).json()
+        msgs = client.get(
+            f"/api/conversations/{conv_id}/messages", headers=bearer(normal_token)
+        ).json()
         assert [m["role"] for m in msgs] == ["user", "assistant"]
 
-    def test_failure_keeps_partial_answer(self, client, normal_token, bearer, stub_rag, monkeypatch):
+    def test_failure_keeps_partial_answer(
+        self, client, normal_token, bearer, stub_rag, monkeypatch
+    ):
         """中途失败时，已经把内容流出去的这一部分不能丢。"""
         from app.services import rag
 
@@ -177,5 +196,7 @@ class TestChatFailure:
         events = _stream_chat(client, bearer(normal_token), "会中途失败的问题")
         conv_id = events[0]["data"]["conversation_id"]
 
-        msgs = client.get(f"/api/conversations/{conv_id}/messages", headers=bearer(normal_token)).json()
+        msgs = client.get(
+            f"/api/conversations/{conv_id}/messages", headers=bearer(normal_token)
+        ).json()
         assert msgs[1]["content"] == "已经生成的一半"

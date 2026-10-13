@@ -1,4 +1,5 @@
 """安全相关：密码加密（bcrypt）与 JWT 令牌签发/校验。"""
+
 import hashlib
 from datetime import datetime, timedelta, timezone
 
@@ -39,16 +40,12 @@ def _create_token(user_id: int, token_type: str, expires_delta: timedelta) -> st
 
 def create_access_token(user_id: int) -> str:
     """短期令牌：用于访问接口，30 分钟过期。"""
-    return _create_token(
-        user_id, "access", timedelta(minutes=settings.access_token_expire_minutes)
-    )
+    return _create_token(user_id, "access", timedelta(minutes=settings.access_token_expire_minutes))
 
 
 def create_refresh_token(user_id: int) -> str:
     """长期令牌：用于换取新的短期令牌，7 天过期。"""
-    return _create_token(
-        user_id, "refresh", timedelta(days=settings.refresh_token_expire_days)
-    )
+    return _create_token(user_id, "refresh", timedelta(days=settings.refresh_token_expire_days))
 
 
 def decode_token(token: str) -> dict:

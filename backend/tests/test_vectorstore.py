@@ -3,6 +3,7 @@
 真实的 Chroma 客户端与向量模型都很重，这里把 Chroma 与 get_embeddings 换成假实现，
 只验证「缓存」这一行为本身。
 """
+
 import pytest
 
 from app.services import vectorstore

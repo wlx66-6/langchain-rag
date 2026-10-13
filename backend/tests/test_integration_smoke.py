@@ -10,6 +10,7 @@
 前置条件：backend/.env 中已配置 JWT_SECRET；如需验管理员流程还需配置
 ADMIN_USERNAME / ADMIN_PASSWORD。
 """
+
 import random
 
 import pytest

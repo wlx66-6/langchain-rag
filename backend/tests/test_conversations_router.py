@@ -1,4 +1,5 @@
 """/api/conversations 路由测试：增删改查与「只能操作自己会话」的归属校验。"""
+
 import pytest
 
 from app.core.security import create_access_token
@@ -22,7 +23,9 @@ class TestCreateAndList:
         assert conv["title"] == "第一个会话"
         assert "id" in conv
 
-    def test_list_only_returns_own(self, client, normal_token, bearer, db_session, normal_user, admin_user):
+    def test_list_only_returns_own(
+        self, client, normal_token, bearer, db_session, normal_user, admin_user
+    ):
         db_session.add(Conversation(user_id=normal_user.id, title="我的"))
         db_session.add(Conversation(user_id=admin_user.id, title="别人的"))
         db_session.commit()
@@ -47,7 +50,9 @@ class TestRenameAndDelete:
         assert r.status_code == 200
         assert r.json()["title"] == "改个名"
 
-    def test_rename_others_forbidden_as_404(self, client, normal_user, bearer, db_session, admin_user):
+    def test_rename_others_forbidden_as_404(
+        self, client, normal_user, bearer, db_session, admin_user
+    ):
         # 管理员名下的会话，被普通用户尝试重命名 → 一律当作「不存在」
         other = Conversation(user_id=admin_user.id, title="别人的")
         db_session.add(other)

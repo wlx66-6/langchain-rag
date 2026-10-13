@@ -1,4 +1,5 @@
 """mock_llm.py 的单元测试：假大模型 MockChatModel 的串行/流式输出（纯逻辑，不联网）。"""
+
 from app.services.mock_llm import MockChatModel
 
 

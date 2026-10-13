@@ -1,19 +1,13 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  api,
-  authApi,
-  chatApi,
-  clearTokens,
-  getAccessToken,
-  knowledgeApi,
-  setTokens,
-} from './api'
+import { api, authApi, chatApi, clearTokens, getAccessToken, knowledgeApi, setTokens } from './api'
 
 const originalAdapter = api.defaults.adapter
 
 /** 用一个假的 adapter 顶替真实网络请求，从而在不联网的情况下跑通拦截器链路。 */
-function stubAdapter(handler: (config: AxiosRequestConfig) => AxiosResponse | Promise<AxiosResponse>) {
+function stubAdapter(
+  handler: (config: AxiosRequestConfig) => AxiosResponse | Promise<AxiosResponse>,
+) {
   api.defaults.adapter = async (config) => handler(config)
 }
 

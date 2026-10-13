@@ -1,4 +1,5 @@
 """RAG 核心编排：追问改写 → 检索 → 重排 → 生成（带引用出处）。"""
+
 from http import HTTPStatus
 
 import dashscope
@@ -63,9 +64,7 @@ async def rewrite_question(question: str, history: list[dict]) -> str:
         return question
     llm = get_llm(streaming=False)
     chain = _CONTEXTUALIZE_PROMPT | llm
-    result = await chain.ainvoke(
-        {"history": _format_history(history), "question": question}
-    )
+    result = await chain.ainvoke({"history": _format_history(history), "question": question})
     return result.content.strip()
 
 
@@ -97,7 +96,9 @@ def _dedup(docs_with_score: list[tuple[Document, float]]) -> list[tuple[Document
     return out
 
 
-def _rerank(question: str, docs_with_score: list[tuple[Document, float]]) -> list[tuple[Document, float]]:
+def _rerank(
+    question: str, docs_with_score: list[tuple[Document, float]]
+) -> list[tuple[Document, float]]:
     """重排：用百炼重排模型给每段候选逐个「精读打分」，及格（≥rerank_min_score）的按相关度排序返回。
 
     相当于先海选出一堆候选，再请评委逐个精读，只留真正贴题的那几条。

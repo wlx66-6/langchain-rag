@@ -109,7 +109,10 @@ async function consume(
         text += String(event.data ?? '')
         handlers.onToken?.(text)
       } else if (event.type === 'error') {
-        throw new StreamError(String(event.data ?? '生成回答失败'), event.code ?? 'generation_failed')
+        throw new StreamError(
+          String(event.data ?? '生成回答失败'),
+          event.code ?? 'generation_failed',
+        )
       }
     }
   }

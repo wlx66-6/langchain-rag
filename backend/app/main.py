@@ -1,4 +1,5 @@
 """FastAPI 入口：启动时校验配置、建表并初始化管理员账号，挂载各路由。"""
+
 import logging
 from contextlib import asynccontextmanager
 
@@ -30,9 +31,7 @@ def seed_admin() -> None:
 
     db = SessionLocal()
     try:
-        exists = (
-            db.query(User).filter(User.username == settings.admin_username).first()
-        )
+        exists = db.query(User).filter(User.username == settings.admin_username).first()
         if not exists:
             db.add(
                 User(

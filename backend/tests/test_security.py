@@ -1,4 +1,5 @@
 """security.py 的单元测试：密码加密/校验 + JWT 令牌签发/解码（纯逻辑，不联网）。"""
+
 import jwt
 import pytest
 

@@ -9,6 +9,7 @@
 3. 用 monkeypatch 把检索、重排、向量库、大模型等外部依赖打桩，
    让路由测试不联网、不加载向量模型即可稳定运行。
 """
+
 import os
 
 # ---- 必须在 import app.* 之前执行 ----
@@ -27,6 +28,7 @@ from app.models import User  # noqa: E402
 from app.routers import chat as chat_router  # noqa: E402
 
 # ============ 数据库夹具 ============
+
 
 @pytest.fixture()
 def db_engine(tmp_path):
@@ -65,6 +67,7 @@ def client(TestingSessionLocal, monkeypatch):
     注意不要用 `with TestClient(app)`——那会触发 lifespan（建真实表、建管理员账号），
     这些副作用与测试无关，反而会污染真实数据文件。
     """
+
     def _override_get_db():
         db = TestingSessionLocal()
         try:
@@ -83,9 +86,11 @@ def client(TestingSessionLocal, monkeypatch):
 
 # ============ 用户与鉴权夹具 ============
 
+
 @pytest.fixture()
 def make_user(db_session):
     """工厂：在临时库里造一个用户，返回 ORM 对象。"""
+
     def _make(username: str = "alice", password: str = "secret123", is_admin: bool = False) -> User:
         user = User(
             username=username,
@@ -115,6 +120,7 @@ def admin_user(make_user):
 @pytest.fixture()
 def bearer():
     """便捷构造请求头：bearer(token) -> {"Authorization": "Bearer ..."}"""
+
     def _bearer(token: str) -> dict[str, str]:
         return {"Authorization": f"Bearer {token}"}
 
@@ -132,6 +138,7 @@ def admin_token(admin_user) -> str:
 
 
 # ============ RAG / 向量库打桩夹具 ============
+
 
 @pytest.fixture()
 def stub_rag(monkeypatch):

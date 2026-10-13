@@ -95,15 +95,17 @@ describe('ChatPage 流式问答', () => {
   it('发送问题后流式拼接回答并展示引用', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        sseResponse([
-          START_EVENT,
-          { type: 'token', data: '你好' },
-          { type: 'token', data: '，这是' },
-          { type: 'token', data: '回答。' },
-          { type: 'done' },
-        ]),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          sseResponse([
+            START_EVENT,
+            { type: 'token', data: '你好' },
+            { type: 'token', data: '，这是' },
+            { type: 'token', data: '回答。' },
+            { type: 'done' },
+          ]),
+        ),
     )
     renderPage()
     await screen.findByText('欢迎使用知识库问答')
@@ -150,7 +152,9 @@ describe('ChatPage 流式问答', () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(new Response('', { status: 401 }))
-      .mockResolvedValueOnce(sseResponse([START_EVENT, { type: 'token', data: '好的' }, { type: 'done' }]))
+      .mockResolvedValueOnce(
+        sseResponse([START_EVENT, { type: 'token', data: '好的' }, { type: 'done' }]),
+      )
     vi.stubGlobal('fetch', fetchMock)
     renderPage()
     await screen.findByText('欢迎使用知识库问答')

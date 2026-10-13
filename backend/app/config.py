@@ -1,4 +1,5 @@
 """全局配置：从 backend/.env 读取百炼 API Key、模型名、路径等。"""
+
 import os
 from pathlib import Path
 
@@ -21,15 +22,15 @@ class Settings(BaseSettings):
 
     # ---- 本地向量化模型与检索参数 ----
     embedding_model: str = "BAAI/bge-m3"
-    chunk_size: int = 500       # 单个文本片段的目标字符数
-    chunk_overlap: int = 50     # 相邻片段保留的重叠字符数，避免语义被切断
-    top_k: int = 4              # 每次检索返回的片段数
+    chunk_size: int = 500  # 单个文本片段的目标字符数
+    chunk_overlap: int = 50  # 相邻片段保留的重叠字符数，避免语义被切断
+    top_k: int = 4  # 每次检索返回的片段数
 
     # ---- 重排（rerank）：对候选片段精排，让引用更精准 ----
-    rerank_model: str = "gte-rerank-v2"   # 百炼提供的重排模型
-    rerank_candidates: int = 10           # 重排前召回的候选片段数
-    rerank_top_n: int = 3                 # 重排后最多保留的引用片段数
-    rerank_min_score: float = 0.2         # 相关度及格线，低于该分视为不相关
+    rerank_model: str = "gte-rerank-v2"  # 百炼提供的重排模型
+    rerank_candidates: int = 10  # 重排前召回的候选片段数
+    rerank_top_n: int = 3  # 重排后最多保留的引用片段数
+    rerank_min_score: float = 0.2  # 相关度及格线，低于该分视为不相关
 
     # ---- 压测开关 ----
     # 置为 True（启动前设环境变量 MOCK_LLM=1）时，问答接口改用「假大模型 + 跳过远程重排」，

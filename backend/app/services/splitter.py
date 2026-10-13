@@ -1,4 +1,5 @@
 """文本切块：把长篇文档切成一小段一小段，方便检索和引用。"""
+
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 

@@ -1,9 +1,11 @@
 """请求 / 响应的数据结构定义（Pydantic）。"""
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field
 
 # ============ 账号相关 ============
+
 
 class RegisterRequest(BaseModel):
     username: str = Field(min_length=2, max_length=64)
@@ -42,6 +44,7 @@ class UserOut(BaseModel):
 
 # ============ 会话相关 ============
 
+
 class ConversationCreate(BaseModel):
     title: str = "新会话"
 
@@ -71,12 +74,14 @@ class MessageOut(BaseModel):
 
 # ============ 问答相关 ============
 
+
 class ChatRequest(BaseModel):
     conversation_id: int | None = None  # 为空表示新建会话
     content: str = Field(min_length=1)
 
 
 # ============ 知识库相关 ============
+
 
 class DocumentOut(BaseModel):
     id: int

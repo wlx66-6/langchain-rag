@@ -1,4 +1,5 @@
 """压测开关 mock_llm 的行为单元测试：假模型替换、改写跳过、重排跳过（纯逻辑，不联网）。"""
+
 import asyncio
 
 from langchain_core.documents import Document
@@ -35,7 +36,10 @@ class TestRewriteQuestion:
         monkeypatch.setattr(rag, "get_llm", _fail)
 
         question = "那有优惠吗"
-        history = [{"role": "user", "content": "它多少钱"}, {"role": "assistant", "content": "399 元"}]
+        history = [
+            {"role": "user", "content": "它多少钱"},
+            {"role": "assistant", "content": "399 元"},
+        ]
         assert asyncio.run(rag.rewrite_question(question, history)) == question
 
     def test_no_history_skips_rewrite(self, monkeypatch):

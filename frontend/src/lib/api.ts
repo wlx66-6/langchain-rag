@@ -1,11 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
-import type {
-  ApiMessage,
-  AuthTokens,
-  Conversation,
-  KnowledgeDocument,
-  UserInfo,
-} from './types'
+import type { ApiMessage, AuthTokens, Conversation, KnowledgeDocument, UserInfo } from './types'
 
 const ACCESS_KEY = 'access_token'
 const REFRESH_KEY = 'refresh_token'

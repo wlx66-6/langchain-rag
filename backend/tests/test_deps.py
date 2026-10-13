@@ -1,4 +1,5 @@
 """core/deps.py 鉴权依赖测试：令牌类型/有效性校验与管理员权限判定。"""
+
 import jwt
 import pytest
 from fastapi import HTTPException
@@ -27,7 +28,9 @@ class TestGetCurrentUser:
         assert exc.value.status_code == 401
 
     def test_rejects_token_signed_with_other_secret(self, normal_user, db_session):
-        forged = jwt.encode({"sub": str(normal_user.id), "type": "access"}, "wrong-secret", algorithm="HS256")
+        forged = jwt.encode(
+            {"sub": str(normal_user.id), "type": "access"}, "wrong-secret", algorithm="HS256"
+        )
         with pytest.raises(HTTPException) as exc:
             get_current_user(token=forged, db=db_session)
         assert exc.value.status_code == 401

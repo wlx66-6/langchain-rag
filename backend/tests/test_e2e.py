@@ -8,6 +8,7 @@
 
 前置条件：backend/.env 已配置 JWT_SECRET、DASHSCOPE_API_KEY、ADMIN_PASSWORD。
 """
+
 import json
 import random
 
@@ -103,6 +104,7 @@ def test_upload_ask_and_cleanup(client, admin_headers, user_headers):
         assert answer2.strip()
     finally:
         # 4) 清理测试文档
-        assert client.delete(
-            f"/api/knowledge/documents/{doc_id}", headers=admin_headers
-        ).status_code == 200
+        assert (
+            client.delete(f"/api/knowledge/documents/{doc_id}", headers=admin_headers).status_code
+            == 200
+        )

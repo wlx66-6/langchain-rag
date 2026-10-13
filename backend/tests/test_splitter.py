@@ -1,4 +1,5 @@
 """splitter.py 的单元测试：文本切块。"""
+
 from langchain_core.documents import Document
 
 from app.services.splitter import split_documents

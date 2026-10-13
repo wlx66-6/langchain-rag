@@ -35,7 +35,10 @@ describe('streamChat', () => {
       'fetch',
       vi.fn().mockResolvedValue(
         sseResponse([
-          { type: 'start', data: { conversation_id: 5, sources: [{ source: 'a.txt', content: '内容' }] } },
+          {
+            type: 'start',
+            data: { conversation_id: 5, sources: [{ source: 'a.txt', content: '内容' }] },
+          },
           { type: 'token', data: '你好' },
           { type: 'token', data: '，世界' },
           { type: 'done' },
@@ -105,9 +108,9 @@ describe('streamChat', () => {
     mockedGetAccessToken.mockReturnValue('token-abc')
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ detail: '会话不存在' }), { status: 404 }),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ detail: '会话不存在' }), { status: 404 })),
     )
 
     await expect(streamChat({ conversationId: 1, content: '问题' })).rejects.toThrow('会话不存在')
@@ -117,9 +120,11 @@ describe('streamChat', () => {
     mockedGetAccessToken.mockReturnValue('token-abc')
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        sseResponse([{ type: 'error', data: '生成失败', code: 'generation_failed' }]),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          sseResponse([{ type: 'error', data: '生成失败', code: 'generation_failed' }]),
+        ),
     )
 
     const err = await streamChat({ conversationId: null, content: '问题' }).catch((e) => e)

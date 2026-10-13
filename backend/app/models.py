@@ -1,4 +1,5 @@
 """数据表定义：用户、会话、消息、知识库文档四张表。"""
+
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
@@ -13,6 +14,7 @@ def now() -> datetime:
 
 class User(Base):
     """用户表：存账号、密码（加密后）、是否管理员。"""
+
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -28,6 +30,7 @@ class User(Base):
 
 class Conversation(Base):
     """会话表：一个用户可以有多个会话（类似微信群聊列表）。"""
+
     __tablename__ = "conversations"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -37,19 +40,16 @@ class Conversation(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now)
 
     user = relationship("User", back_populates="conversations")
-    messages = relationship(
-        "Message", back_populates="conversation", cascade="all, delete-orphan"
-    )
+    messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
 
 
 class Message(Base):
     """消息表：记录会话里的每条提问和回答。"""
+
     __tablename__ = "messages"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    conversation_id: Mapped[int] = mapped_column(
-        ForeignKey("conversations.id"), index=True
-    )
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id"), index=True)
     role: Mapped[str] = mapped_column(String(16))  # user=用户 / assistant=客服
     content: Mapped[str] = mapped_column(Text)
     citations: Mapped[str | None] = mapped_column(Text, nullable=True)  # 引用的知识库片段(JSON)
@@ -60,6 +60,7 @@ class Message(Base):
 
 class KnowledgeDocument(Base):
     """知识库文档表：记录每个上传入库的文档，方便管理员查看和删除。"""
+
     __tablename__ = "knowledge_documents"
 
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -1,4 +1,5 @@
 """向量化模型：加载本地 bge-m3，把文字变成向量（数字指纹）。"""
+
 from functools import lru_cache
 
 from langchain_huggingface import HuggingFaceEmbeddings

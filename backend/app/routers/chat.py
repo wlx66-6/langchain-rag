@@ -1,4 +1,5 @@
 """会话管理 + 问答接口（流式返回 + 引用片段）。"""
+
 import asyncio
 import json
 import logging
@@ -45,6 +46,7 @@ def _get_owned_conversation(conv_id: int, user: User, db: Session) -> Conversati
 
 
 # ============ 会话管理 ============
+
 
 @router.post("/conversations", response_model=ConversationOut, status_code=201)
 def create_conversation(
@@ -122,6 +124,7 @@ def get_messages(
 
 
 # ============ 问答（核心） ============
+
 
 async def _client_gone(request: Request) -> bool:
     """判断客户端是否已断开；判断本身出错时按「未断开」处理，不能因此中断回答。"""
@@ -229,9 +232,7 @@ async def chat(
         except Exception:
             # 详情只进日志；对外只给统一文案 + 机器可读的 code
             logger.exception("生成回答失败 conversation_id=%s", conv_id)
-            _persist_assistant_message(
-                conv_id, "".join(parts) or _FAILED_ANSWER, sources
-            )
+            _persist_assistant_message(conv_id, "".join(parts) or _FAILED_ANSWER, sources)
             yield _sse({"type": "error", "code": "generation_failed", "data": _GENERATION_FAILED})
             return
 

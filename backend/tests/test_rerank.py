@@ -1,4 +1,5 @@
 """rag.py 的 _rerank 单元测试：重排的打分筛选、及格线兜底、异常回退（mock 掉远程重排，不联网）。"""
+
 from http import HTTPStatus
 
 import dashscope
@@ -68,7 +69,11 @@ class TestRerankFallback:
 
 class TestRerankFallbackPaths:
     def test_status_not_ok_returns_dedup_original(self, monkeypatch):
-        docs = [(_doc("重复内容", "a.txt"), 0.5), (_doc("重复内容", "a.txt"), 0.5), (_doc("独有内容", "c.txt"), 0.5)]
+        docs = [
+            (_doc("重复内容", "a.txt"), 0.5),
+            (_doc("重复内容", "a.txt"), 0.5),
+            (_doc("独有内容", "c.txt"), 0.5),
+        ]
         monkeypatch.setattr(dashscope.TextReRank, "call", lambda **kw: _Resp(500))
 
         out = _rerank("某问题", docs)

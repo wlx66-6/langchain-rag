@@ -1,4 +1,5 @@
 """rag.py 的单元测试：引用格式化等纯逻辑（不涉及大模型/向量库）。"""
+
 from langchain_core.documents import Document
 
 from app.services.rag import _dedup, _format_history, build_sources, format_context
@@ -29,9 +30,7 @@ class TestFormatContext:
 
 class TestBuildSources:
     def test_extracts_source_and_content(self):
-        assert build_sources([(_doc("内容A"), 0.1)]) == [
-            {"source": "a.txt", "content": "内容A"}
-        ]
+        assert build_sources([(_doc("内容A"), 0.1)]) == [{"source": "a.txt", "content": "内容A"}]
 
     def test_missing_source_falls_back(self):
         doc = Document(page_content="内容", metadata={})

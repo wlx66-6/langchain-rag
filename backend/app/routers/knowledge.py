@@ -1,4 +1,5 @@
 """知识库管理接口（仅管理员可用）：上传、列表、删除文档。"""
+
 import logging
 from pathlib import Path
 from uuid import uuid4
@@ -113,7 +114,7 @@ async def upload_document(
         chunks = splitter.split_documents(raw_docs)
         for c in chunks:
             c.metadata["source"] = file.filename  # 引用时展示的文件名
-            c.metadata["doc_id"] = doc.id          # 便于按文档删除
+            c.metadata["doc_id"] = doc.id  # 便于按文档删除
         if chunks:
             get_vectorstore().add_documents(chunks)
 

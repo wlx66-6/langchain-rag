@@ -1,4 +1,5 @@
 """/api/auth 路由测试：注册、登录、刷新令牌、改密码、当前用户（走临时库，不联网）。"""
+
 from app.core.security import create_access_token, create_refresh_token
 
 
@@ -111,14 +112,20 @@ class TestChangePassword:
         assert "成功" in r.json()["message"]
 
         # 旧密码失效、新密码可登录
-        assert client.post(
-            "/api/auth/login",
-            json={"username": normal_user.username, "password": "secret123"},
-        ).status_code == 401
-        assert client.post(
-            "/api/auth/login",
-            json={"username": normal_user.username, "password": "brand-new-123"},
-        ).status_code == 200
+        assert (
+            client.post(
+                "/api/auth/login",
+                json={"username": normal_user.username, "password": "secret123"},
+            ).status_code
+            == 401
+        )
+        assert (
+            client.post(
+                "/api/auth/login",
+                json={"username": normal_user.username, "password": "brand-new-123"},
+            ).status_code
+            == 200
+        )
 
     def test_change_password_wrong_old(self, client, normal_token, bearer):
         r = client.post(

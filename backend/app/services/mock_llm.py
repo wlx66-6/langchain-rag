@@ -4,6 +4,7 @@
 问答接口就会改用这个假模型生成回答，从而只压「SQLite + 词向量 + Chroma 检索」这条本地骨架，
 不调用百炼（qwen 改写/生成、重排），既省钱，又不会被百炼的速率限制干扰压测结果。
 """
+
 from collections.abc import Iterator
 from typing import Any
 
@@ -36,9 +37,7 @@ class MockChatModel(BaseChatModel):
         **kwargs: Any,
     ) -> ChatResult:
         # 非流式路径：一次性返回完整固定回答（本项目假模式里基本用不到，但保证接口完整）
-        return ChatResult(
-            generations=[ChatGeneration(message=AIMessage(content=self.answer))]
-        )
+        return ChatResult(generations=[ChatGeneration(message=AIMessage(content=self.answer))])
 
     def _stream(
         self,

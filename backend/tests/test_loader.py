@@ -1,4 +1,5 @@
 """loader.py 的单元测试：文件格式白名单校验 + 纯文本解析。"""
+
 import pytest
 
 from app.services.loader import allowed_ext, check_allowed, load_file
@@ -14,9 +15,7 @@ class TestAllowedExt:
 
 
 class TestCheckAllowed:
-    @pytest.mark.parametrize(
-        "name", ["a.pdf", "b.docx", "c.xlsx", "d.txt", "e.md", "f.csv"]
-    )
+    @pytest.mark.parametrize("name", ["a.pdf", "b.docx", "c.xlsx", "d.txt", "e.md", "f.csv"])
     def test_allowed_extensions_pass(self, name):
         assert check_allowed(name) == allowed_ext(name)
 
