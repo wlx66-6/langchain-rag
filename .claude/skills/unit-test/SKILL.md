@@ -12,6 +12,9 @@ description: 为「电商知识库问答系统（LangChain RAG）」项目创建
 
 测试跑完后，由 Claude 汇总成一份 markdown 测试报告（保存到项目根目录 `test-report.md`）。
 
+> `test-report.md` 是**每次跑测试都会重新生成的本地产物**，已在 `.gitignore` 中排除、不入库
+> （`gate.mjs` 计算代码指纹时也特意跳过它，避免「跑个测试」就把通过票顶掉）。
+
 ## 第 0 步：确认测试环境是否就绪
 
 **安装任何新依赖、修改 `package.json` / `requirements.txt` 前，都要先向用户说明并征得同意。**

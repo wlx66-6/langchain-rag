@@ -30,14 +30,16 @@ description: 启动「电商知识库问答系统（LangChain RAG）」（后端
 后端：
 
 ```bash
-cd d:/LangChainRAG项目/backend
+# 在仓库根目录执行
+cd backend
 "../venv/Scripts/python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 前端：
 
 ```bash
-cd d:/LangChainRAG项目/frontend
+# 在仓库根目录执行
+cd frontend
 npm run dev
 ```
 
