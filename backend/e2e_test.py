@@ -4,26 +4,30 @@ import random
 
 from fastapi.testclient import TestClient
 
+from app.config import settings
 from app.main import app
 
 client = TestClient(app)
 
 print("=== 1) 管理员登录 ===")
-r = client.post("/api/auth/login", json={"username": "admin", "password": "123456"})
+r = client.post(
+    "/api/auth/login",
+    json={"username": settings.admin_username, "password": settings.admin_password},
+)
 assert r.status_code == 200, r.text
 admin_token = r.json()["access_token"]
 print("admin 登录成功")
 
 print("\n=== 2) 上传测试商品文档 ===")
 doc_content = (
-    "星辰X1 蓝牙耳机 商品说明\n"
-    "- 型号：星辰X1\n"
+    "X1 无线降噪耳机 商品说明\n"
+    "- 型号：X1\n"
     "- 续航：单次充电最长续航 40 小时（含充电盒）\n"
-    "- 颜色：曜石黑、珍珠白、星海蓝三种\n"
+    "- 颜色：曜石黑、珍珠白、雾霾蓝三种\n"
     "- 价格：399 元\n"
     "- 售后：支持 7 天无理由退货，全国联保 1 年\n"
 )
-files = {"file": ("星辰X1说明.txt", doc_content.encode("utf-8"), "text/plain")}
+files = {"file": ("示例商品说明.txt", doc_content.encode("utf-8"), "text/plain")}
 r = client.post(
     "/api/knowledge/upload",
     headers={"Authorization": f"Bearer {admin_token}"},
@@ -46,7 +50,7 @@ user_token = r.json()["access_token"]
 print("普通用户:", uname, "登录成功")
 
 print("\n=== 5) 提问（流式，真实走 RAG） ===")
-question = "星辰X1 耳机的续航是多少小时？"
+question = "X1 耳机的续航是多少小时？"
 tokens, sources, err = [], None, None
 with client.stream(
     "POST",

@@ -28,10 +28,10 @@ class TestCheckAllowed:
 class TestLoadFile:
     def test_load_txt(self, tmp_path):
         p = tmp_path / "说明.txt"
-        p.write_text("星辰X1 耳机，续航 40 小时。", encoding="utf-8")
+        p.write_text("示例耳机，续航 40 小时。", encoding="utf-8")
         docs = load_file(p, "说明.txt")
         assert len(docs) == 1
-        assert docs[0].page_content == "星辰X1 耳机，续航 40 小时。"
+        assert docs[0].page_content == "示例耳机，续航 40 小时。"
 
     def test_load_markdown(self, tmp_path):
         p = tmp_path / "商品.md"

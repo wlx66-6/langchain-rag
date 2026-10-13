@@ -16,11 +16,11 @@ from time import perf_counter
 from locust import HttpUser, between, task
 
 # ===== 账号配置 =====
-# 默认：所有虚拟用户共用一个演示账号 itheima/123456（最简单，压系统骨架完全够用）。
-# 若论文要「100 个不同账号同时用」的证据：先跑 seed_users.py 注册 loaduser001~100，
+# 默认：所有虚拟用户共用一个共享账号（最简单，压系统骨架完全够用）。
+# 若想模拟「100 个不同账号同时在线」：先跑 seed_users.py 注册 loaduser001~100，
 # 再设环境变量 LOADTEST_DISTINCT_USERS=1 启动，每个虚拟用户会自动用不同账号登录。
-USERNAME = os.environ.get("LOADTEST_USERNAME", "itheima")
-PASSWORD = os.environ.get("LOADTEST_PASSWORD", "123456")
+USERNAME = os.environ.get("LOADTEST_USERNAME", "loadtest")
+PASSWORD = os.environ.get("LOADTEST_PASSWORD", "loadtest123456")
 DISTINCT_USERS = os.environ.get("LOADTEST_DISTINCT_USERS") == "1"
 _SEED_PASSWORD = "LoadTest123"  # 与 seed_users.py 保持一致
 

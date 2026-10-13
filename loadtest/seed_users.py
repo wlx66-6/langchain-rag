@@ -1,7 +1,7 @@
 """（可选）批量预注册 100 个压测账号 loaduser001~100。
 
-默认的压测脚本（locustfile.py）用单个演示账号 itheima，不需要跑这个脚本。
-只有当论文想要「100 个不同用户同时在线」的证据时，才：
+默认的压测脚本（locustfile.py）用单个共享账号，不需要跑这个脚本。
+若想模拟「100 个不同用户同时在线」：
     1) 先跑本脚本注册账号：  ..\\venv\\Scripts\\python.exe seed_users.py 100
     2) 再用 LOADTEST_DISTINCT_USERS=1 启动 Locust（每个虚拟用户自动用不同账号）。
 
