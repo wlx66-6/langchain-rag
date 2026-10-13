@@ -1,0 +1,67 @@
+/* 全局设计变量与基础样式：颜色、圆角、阴影统一在这里定义，其它文件只引用变量。 */
+:root {
+  /* 颜色 */
+  --bg: #f4f5f9;
+  --surface: #ffffff;
+  --surface-subtle: #fafbfe;
+  --border: #e6e8ef;
+  --border-strong: #c9cde0;
+  --text: #1f2430;
+  --text-muted: #6b7280;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-soft: #eef0ff;
+  --danger: #dc2626;
+  --danger-soft: #fdf2f2;
+  --danger-border: #f3c9c9;
+  --success-bg: #dcfce7;
+  --success-text: #15803d;
+  --error-bg: #fee2e2;
+  --error-text: #b91c1c;
+  --warn-bg: #fef3c7;
+  --warn-text: #b45309;
+
+  /* 尺寸 */
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow: 0 4px 20px rgba(30, 40, 80, 0.08);
+  --sidebar-width: 280px;
+
+  /* 层级 */
+  --z-toast: 1000;
+  --z-modal: 900;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* 屏幕阅读器专用文本：视觉上隐藏但仍可被读屏软件读到 */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

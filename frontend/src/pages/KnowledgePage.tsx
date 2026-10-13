@@ -1,57 +1,63 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { knowledgeApi } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { errorMessage } from '../lib/errors'
+import type { KnowledgeDocument } from '../lib/types'
+import { useUi } from '../lib/ui'
 
-interface Doc {
-  id: number
-  filename: string
-  file_type: string
-  status: string
-  chunk_count: number
-  created_at: string
-}
+const ACCEPT = '.pdf,.docx,.xlsx,.xlsm,.txt,.md,.markdown,.csv'
 
 export default function KnowledgePage() {
   const { isAdmin } = useAuth()
-  const [docs, setDocs] = useState<Doc[]>([])
+  const { toast, confirm } = useUi()
+  const [docs, setDocs] = useState<KnowledgeDocument[]>([])
   const [uploading, setUploading] = useState(false)
-  const [msg, setMsg] = useState('')
+  const [deletingId, setDeletingId] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     try {
       setDocs(await knowledgeApi.listDocuments())
-    } catch (err: any) {
-      setMsg(err?.response?.data?.detail || '加载失败')
+    } catch (err) {
+      toast(errorMessage(err, '文档列表加载失败'), 'error')
     }
-  }
+  }, [toast])
 
   useEffect(() => {
-    refresh()
-  }, [])
+    // 非管理员没有权限，连请求都不用发（后端也会返回 403）
+    if (isAdmin) refresh()
+  }, [isAdmin, refresh])
 
   const onUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setMsg('')
     setUploading(true)
     try {
       await knowledgeApi.uploadDocument(file)
-      setMsg(`「${file.name}」上传成功，已入库`)
-      refresh()
-    } catch (err: any) {
-      setMsg(err?.response?.data?.detail || '上传失败')
+      toast(`「${file.name}」上传成功，已入库`, 'success')
+      await refresh()
+    } catch (err) {
+      toast(errorMessage(err, '上传失败，请重试'), 'error')
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ''
     }
   }
 
-  const onDelete = async (d: Doc) => {
-    if (!window.confirm(`确定删除「${d.filename}」吗？将同时从知识库中移除对应内容`)) return
-    await knowledgeApi.deleteDocument(d.id)
-    refresh()
+  const onDelete = async (doc: KnowledgeDocument) => {
+    const ok = await confirm(`确定删除「${doc.filename}」吗？将同时从知识库中移除对应内容。`)
+    if (!ok) return
+    setDeletingId(doc.id)
+    try {
+      await knowledgeApi.deleteDocument(doc.id)
+      toast('文档已删除', 'success')
+      await refresh()
+    } catch (err) {
+      toast(errorMessage(err, '删除失败，请重试'), 'error')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   if (!isAdmin) {
@@ -81,21 +87,16 @@ export default function KnowledgePage() {
         <input
           ref={fileRef}
           type="file"
-          accept=".pdf,.docx,.xlsx,.xlsm,.txt,.md,.markdown,.csv"
+          accept={ACCEPT}
           onChange={onUpload}
           disabled={uploading}
+          aria-label="选择要上传的文档"
         />
-        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+        <span className="upload-hint">
           支持 PDF / Word / Excel / TXT / Markdown / CSV
           {uploading ? '　正在上传解析，请稍候…' : ''}
         </span>
       </div>
-
-      {msg && (
-        <div className="form-error" style={{ marginBottom: 12 }}>
-          {msg}
-        </div>
-      )}
 
       <table className="kb-table">
         <thead>
@@ -111,7 +112,7 @@ export default function KnowledgePage() {
         <tbody>
           {docs.length === 0 && (
             <tr>
-              <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+              <td colSpan={6} className="kb-empty">
                 暂无文档，请先上传
               </td>
             </tr>
@@ -128,8 +129,12 @@ export default function KnowledgePage() {
               </td>
               <td>{new Date(d.created_at).toLocaleString()}</td>
               <td>
-                <button className="btn btn-danger" onClick={() => onDelete(d)}>
-                  删除
+                <button
+                  className="btn btn-danger"
+                  onClick={() => onDelete(d)}
+                  disabled={deletingId === d.id}
+                >
+                  {deletingId === d.id ? '删除中…' : '删除'}
                 </button>
               </td>
             </tr>

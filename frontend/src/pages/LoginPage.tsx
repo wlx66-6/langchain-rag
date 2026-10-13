@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { errorMessage } from '../lib/errors'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -12,13 +13,14 @@ export default function LoginPage() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
+    if (loading) return
     setError('')
     setLoading(true)
     try {
       await login(username.trim(), password)
       navigate('/chat')
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || '登录失败，请重试')
+    } catch (err) {
+      setError(errorMessage(err, '登录失败，请重试'))
     } finally {
       setLoading(false)
     }
@@ -27,28 +29,38 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={submit}>
-        <div className="auth-title">电商知识库问答系统</div>
+        <h1 className="auth-title">电商知识库问答系统</h1>
         <div className="auth-sub">登录后即可开始智能商品问答</div>
 
         <div className="form-field">
-          <label className="form-label">用户名</label>
+          <label className="form-label" htmlFor="login-username">
+            用户名
+          </label>
           <input
+            id="login-username"
             className="form-input"
+            autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoFocus
           />
         </div>
         <div className="form-field">
-          <label className="form-label">密码</label>
+          <label className="form-label" htmlFor="login-password">
+            密码
+          </label>
           <input
+            id="login-password"
             className="form-input"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        <div className="form-error">{error}</div>
+        <div className="form-error" role="alert">
+          {error}
+        </div>
 
         <button className="btn btn-primary btn-block" disabled={loading}>
           {loading ? '登录中…' : '登录'}

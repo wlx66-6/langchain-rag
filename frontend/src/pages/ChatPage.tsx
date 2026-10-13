@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -8,50 +9,40 @@ import {
 import ReactMarkdown from 'react-markdown'
 import { Link } from 'react-router-dom'
 import remarkGfm from 'remark-gfm'
-import { chatApi, getAccessToken } from '../lib/api'
+import { chatApi } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { errorMessage } from '../lib/errors'
+import { streamChat } from '../lib/sse'
+import type { ApiMessage, ChatMessage, Citation, Conversation } from '../lib/types'
+import { useUi } from '../lib/ui'
 
-interface Source {
-  source: string
-  content: string
-}
-interface ChatMessage {
-  id: number
-  role: 'user' | 'assistant'
-  content: string
-  sources: Source[]
-}
-interface Conv {
-  id: number
-  title: string
-  updated_at: string
-}
-
-function parseCitations(c?: string | null): Source[] {
-  if (!c) return []
+/** 后端把引用存成 JSON 字符串，解析失败（脏数据）时当作没有引用。 */
+function parseCitations(raw?: string | null): Citation[] {
+  if (!raw) return []
   try {
-    return JSON.parse(c)
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as Citation[]) : []
   } catch {
     return []
   }
 }
 
 // 单条引用卡片：内容过长时默认收起（只显示前 3 行），点「展开/收起」切换
-function CitationCard({ source, content }: Source) {
+function CitationCard({ source, content }: Citation) {
   const [expanded, setExpanded] = useState(false)
   const long = content.length > 120
   const contentClass = long && !expanded ? 'citation-content collapsed' : 'citation-content'
   return (
     <div className="citation">
-      <div
+      <button
+        type="button"
         className={`citation-head${long ? ' clickable' : ''}`}
         onClick={() => long && setExpanded((v) => !v)}
+        aria-expanded={long ? expanded : undefined}
       >
         <span className="citation-source">📄 {source}</span>
-        {long && (
-          <span className="citation-toggle">{expanded ? '收起 ▲' : '展开 ▼'}</span>
-        )}
-      </div>
+        {long && <span className="citation-toggle">{expanded ? '收起 ▲' : '展开 ▼'}</span>}
+      </button>
       <div className={contentClass}>{content}</div>
     </div>
   )
@@ -59,55 +50,73 @@ function CitationCard({ source, content }: Source) {
 
 export default function ChatPage() {
   const { user, isAdmin } = useAuth()
-  const [conversations, setConversations] = useState<Conv[]>([])
+  const { toast, confirm } = useUi()
+
+  const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConvId, setActiveConvId] = useState<number | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState('')
-  const [sources, setSources] = useState<Source[]>([])
-  const [loading, setLoading] = useState(false)
+  const [sources, setSources] = useState<Citation[]>([])
+  const [sending, setSending] = useState(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  // 在途请求的取消器与序号：切会话/卸载时中止旧流，序号用来丢弃过期回调
+  const abortRef = useRef<AbortController | null>(null)
+  const streamSeq = useRef(0)
 
-  const refreshConversations = async () => {
+  const cancelStream = useCallback(() => {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setSending(false) // 主动取消时发送态由这里复位（send 的 finally 会因序号变化而跳过）
+  }, [])
+
+  // 组件卸载时中止在途流，避免回调继续 setState
+  useEffect(() => cancelStream, [cancelStream])
+
+  const refreshConversations = useCallback(async () => {
     try {
       setConversations(await chatApi.listConversations())
-    } catch {
-      /* 忽略 */
+    } catch (err) {
+      toast(errorMessage(err, '会话列表加载失败'), 'error')
     }
-  }
+  }, [toast])
 
   useEffect(() => {
     refreshConversations()
-  }, [])
+  }, [refreshConversations])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, streaming, sources])
 
   const selectConversation = async (id: number) => {
-    if (loading) return
+    // 允许流式回答期间切走：取消在途请求，避免旧流的回调污染新会话的消息
+    cancelStream()
+    streamSeq.current += 1 // 让旧流已发出的回调失效
     setActiveConvId(id)
     setStreaming('')
     setSources([])
     try {
       const raw = await chatApi.getMessages(id)
       setMessages(
-        raw.map((m: any) => ({
+        raw.map((m: ApiMessage) => ({
           id: m.id,
-          role: m.role as 'user' | 'assistant',
+          role: m.role === 'assistant' ? 'assistant' : 'user',
           content: m.content,
-          sources: parseCitations(m.citations),
+          citations: parseCitations(m.citations),
         })),
       )
-    } catch {
+    } catch (err) {
       setMessages([])
+      toast(errorMessage(err, '历史消息加载失败'), 'error')
     }
   }
 
   const newConversation = () => {
-    if (loading) return
+    cancelStream()
+    streamSeq.current += 1
     setActiveConvId(null)
     setMessages([])
     setStreaming('')
@@ -116,98 +125,76 @@ export default function ChatPage() {
   }
 
   const deleteConversation = async (id: number) => {
-    if (!window.confirm('确定删除该会话吗？')) return
-    await chatApi.deleteConversation(id)
-    if (activeConvId === id) newConversation()
-    refreshConversations()
+    if (!(await confirm('确定删除该会话吗？删除后无法恢复。'))) return
+    try {
+      await chatApi.deleteConversation(id)
+      if (activeConvId === id) newConversation()
+      await refreshConversations()
+      toast('会话已删除', 'success')
+    } catch (err) {
+      toast(errorMessage(err, '删除失败，请重试'), 'error')
+    }
   }
 
   const handleInput = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
     const el = e.target
     el.style.height = 'auto'
-    el.style.height = Math.min(el.scrollHeight, 160) + 'px'
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`
   }
 
   const send = async () => {
     const text = input.trim()
-    if (!text || loading || streaming !== '') return
+    if (!text || sending) return
     setInput('')
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now(), role: 'user', content: text, sources: [] },
-    ])
+    setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: text, citations: [] }])
     setStreaming('')
     setSources([])
-    setLoading(true)
+    setSending(true)
+
+    const seq = ++streamSeq.current
+    const controller = new AbortController()
+    abortRef.current = controller
+    let finalSources: Citation[] = []
 
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getAccessToken()}`,
+      const result = await streamChat({
+        conversationId: activeConvId,
+        content: text,
+        signal: controller.signal,
+        onStart: (convId, citations) => {
+          if (streamSeq.current !== seq) return
+          if (convId != null && convId !== activeConvId) {
+            setActiveConvId(convId) // 后端新建了会话，记下它的 ID
+            refreshConversations()
+          }
+          finalSources = citations
+          setSources(citations)
         },
-        body: JSON.stringify({ conversation_id: activeConvId, content: text }),
+        onToken: (accumulated) => {
+          if (streamSeq.current === seq) setStreaming(accumulated)
+        },
       })
 
-      if (res.status === 401) {
-        window.location.href = '/login'
-        return
-      }
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.detail || '请求失败，请重试')
-      }
-
-      const reader = res.body!.getReader()
-      const decoder = new TextDecoder()
-      let buf = ''
-      let assistantText = ''
-      let finalSources: Source[] = []
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buf += decoder.decode(value, { stream: true })
-        const events = buf.split('\n\n')
-        buf = events.pop() ?? ''
-        for (const ev of events) {
-          const line = ev.split('\n').find((l) => l.startsWith('data:'))
-          if (!line) continue
-          const payload = JSON.parse(line.slice(5).trim())
-          if (payload.type === 'start') {
-            const { conversation_id, sources: srcs } = payload.data
-            if (conversation_id != null && conversation_id !== activeConvId) {
-              setActiveConvId(conversation_id)
-              refreshConversations()
-            }
-            finalSources = srcs
-            setSources(srcs)
-          } else if (payload.type === 'token') {
-            assistantText += payload.data
-            setStreaming(assistantText)
-          } else if (payload.type === 'error') {
-            throw new Error(payload.data)
-          }
-        }
-      }
-
+      if (streamSeq.current !== seq) return // 已被切会话/新建打断，丢弃结果
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 1,
           role: 'assistant',
-          content: assistantText || '（未能生成回答）',
-          sources: finalSources,
+          content: result.text || '（未能生成回答）',
+          citations: result.citations,
         },
       ])
       setStreaming('')
-    } catch (err: any) {
-      window.alert(err?.message || '发送失败，请重试')
+    } catch (err) {
+      if (controller.signal.aborted) return // 主动取消，静默处理
+      if (streamSeq.current !== seq) return
+      toast(errorMessage(err, '发送失败，请重试'), 'error')
       setStreaming('')
     } finally {
-      setLoading(false)
+      if (abortRef.current === controller) abortRef.current = null
+      if (streamSeq.current === seq) setSending(false)
     }
   }
 
@@ -217,6 +204,15 @@ export default function ChatPage() {
       send()
     }
   }
+
+  const renderCitations = (items: Citation[]) => (
+    <div className="citations">
+      <div className="citations-title">引用资料</div>
+      {items.map((s, i) => (
+        <CitationCard key={i} source={s.source} content={s.content} />
+      ))}
+    </div>
+  )
 
   return (
     <div className="chat-layout">
@@ -229,9 +225,7 @@ export default function ChatPage() {
         </div>
         <div className="conv-list">
           {conversations.length === 0 && (
-            <div style={{ padding: 12, color: 'var(--text-muted)', fontSize: 14 }}>
-              暂无会话，点击「新建」开始
-            </div>
+            <div className="conv-empty">暂无会话，点击「新建」开始</div>
           )}
           {conversations.map((c) => (
             <div
@@ -242,6 +236,7 @@ export default function ChatPage() {
               <span className="conv-title">{c.title}</span>
               <button
                 className="conv-del"
+                aria-label={`删除会话 ${c.title}`}
                 onClick={(e) => {
                   e.stopPropagation()
                   deleteConversation(c.id)
@@ -288,16 +283,7 @@ export default function ChatPage() {
                   m.content
                 )}
               </div>
-              {m.role === 'assistant' && m.sources.length > 0 && (
-                <div className="citations">
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>
-                    引用资料
-                  </div>
-                  {m.sources.map((s, i) => (
-                    <CitationCard key={i} source={s.source} content={s.content} />
-                  ))}
-                </div>
-              )}
+              {m.role === 'assistant' && m.citations.length > 0 && renderCitations(m.citations)}
             </div>
           ))}
 
@@ -308,16 +294,7 @@ export default function ChatPage() {
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{streaming}</ReactMarkdown>
                 </div>
               </div>
-              {sources.length > 0 && (
-                <div className="citations">
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>
-                    引用资料
-                  </div>
-                  {sources.map((s, i) => (
-                    <CitationCard key={i} source={s.source} content={s.content} />
-                  ))}
-                </div>
-              )}
+              {sources.length > 0 && renderCitations(sources)}
             </div>
           )}
 
@@ -328,6 +305,7 @@ export default function ChatPage() {
           <textarea
             ref={inputRef}
             className="input-textarea"
+            aria-label="输入问题"
             placeholder="请输入问题，Enter 发送，Shift+Enter 换行"
             value={input}
             onChange={handleInput}
@@ -337,9 +315,9 @@ export default function ChatPage() {
           <button
             className="btn btn-primary send-btn"
             onClick={send}
-            disabled={loading || !input.trim()}
+            disabled={sending || !input.trim()}
           >
-            {loading ? '思考中…' : '发送'}
+            {sending ? '思考中…' : '发送'}
           </button>
         </div>
       </main>

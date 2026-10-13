@@ -14,6 +14,8 @@ vi.mock('./lib/api', () => ({
     deleteDocument: vi.fn(),
   },
   getAccessToken: vi.fn().mockReturnValue(null),
+  refreshAccessToken: vi.fn(),
+  onAuthCleared: vi.fn(() => () => {}),
   setTokens: vi.fn(),
   clearTokens: vi.fn(),
 }))
@@ -32,6 +34,7 @@ beforeEach(() => {
   mockedUseAuth.mockReturnValue({
     user: null,
     isAdmin: false,
+    loading: false,
     login: vi.fn(),
     logout: vi.fn(),
   })
@@ -62,10 +65,24 @@ describe('App 路由', () => {
     mockedUseAuth.mockReturnValue({
       user: { id: 1, username: 'alice', is_admin: false },
       isAdmin: false,
+      loading: false,
       login: vi.fn(),
       logout: vi.fn(),
     })
     renderAt('/chat')
     expect(screen.getByText('欢迎使用知识库问答')).toBeTruthy()
+  })
+
+  it('校验登录态期间显示加载中，不闪登录页', () => {
+    mockedUseAuth.mockReturnValue({
+      user: null,
+      isAdmin: false,
+      loading: true,
+      login: vi.fn(),
+      logout: vi.fn(),
+    })
+    renderAt('/chat')
+    expect(screen.getByText('加载中…')).toBeTruthy()
+    expect(screen.queryByText('电商知识库问答系统')).toBeNull()
   })
 })

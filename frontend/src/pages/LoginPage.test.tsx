@@ -1,8 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import LoginPage from './LoginPage'
 import { useAuth } from '../lib/auth'
+import { apiError } from '../test/fixtures'
+import { renderWithProviders } from '../test/render'
 
 vi.mock('../lib/auth', () => ({ useAuth: vi.fn() }))
 
@@ -10,13 +12,12 @@ const mockedUseAuth = vi.mocked(useAuth)
 const loginMock = vi.fn()
 
 function renderPage() {
-  return render(
-    <MemoryRouter initialEntries={['/login']}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/chat" element={<div>聊天页</div>} />
-      </Routes>
-    </MemoryRouter>,
+  return renderWithProviders(
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/chat" element={<div>聊天页</div>} />
+    </Routes>,
+    '/login',
   )
 }
 
@@ -36,6 +37,7 @@ beforeEach(() => {
   mockedUseAuth.mockReturnValue({
     user: null,
     isAdmin: false,
+    loading: false,
     login: loginMock,
     logout: vi.fn(),
   })
@@ -60,7 +62,7 @@ describe('LoginPage', () => {
   })
 
   it('登录失败时展示后端返回的错误信息', async () => {
-    loginMock.mockRejectedValue({ response: { data: { detail: '用户名或密码错误' } } })
+    loginMock.mockRejectedValue(apiError('用户名或密码错误', 401))
     const { container } = renderPage()
     fill(container, 'alice', 'wrong')
     submit(container)
@@ -69,7 +71,7 @@ describe('LoginPage', () => {
   })
 
   it('登录失败且后端无 detail 时展示兜底文案', async () => {
-    loginMock.mockRejectedValue(new Error('network down'))
+    loginMock.mockRejectedValue({ weird: true })
     const { container } = renderPage()
     fill(container, 'alice', 'secret123')
     submit(container)

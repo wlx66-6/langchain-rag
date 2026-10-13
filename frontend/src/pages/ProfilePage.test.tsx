@@ -1,9 +1,11 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import ProfilePage from './ProfilePage'
 import { authApi } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { apiError } from '../test/fixtures'
+import { renderWithProviders } from '../test/render'
 
 vi.mock('../lib/api', () => ({ authApi: { changePassword: vi.fn() } }))
 vi.mock('../lib/auth', () => ({ useAuth: vi.fn() }))
@@ -13,14 +15,13 @@ const mockedUseAuth = vi.mocked(useAuth)
 const logoutMock = vi.fn()
 
 function renderPage() {
-  return render(
-    <MemoryRouter initialEntries={['/profile']}>
-      <Routes>
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/login" element={<div>登录页</div>} />
-        <Route path="/chat" element={<div>聊天页</div>} />
-      </Routes>
-    </MemoryRouter>,
+  return renderWithProviders(
+    <Routes>
+      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/login" element={<div>登录页</div>} />
+      <Route path="/chat" element={<div>聊天页</div>} />
+    </Routes>,
+    '/profile',
   )
 }
 
@@ -37,6 +38,7 @@ beforeEach(() => {
   mockedUseAuth.mockReturnValue({
     user: { id: 1, username: 'alice', is_admin: false },
     isAdmin: false,
+    loading: false,
     login: vi.fn(),
     logout: logoutMock,
   })
@@ -52,6 +54,7 @@ describe('ProfilePage', () => {
     mockedUseAuth.mockReturnValue({
       user: { id: 1, username: 'boss', is_admin: true },
       isAdmin: true,
+      loading: false,
       login: vi.fn(),
       logout: logoutMock,
     })
@@ -89,7 +92,7 @@ describe('ProfilePage', () => {
   })
 
   it('后端报错时展示错误信息', async () => {
-    changePasswordMock.mockRejectedValue({ response: { data: { detail: '原密码错误' } } })
+    changePasswordMock.mockRejectedValue(apiError('原密码错误', 400))
     const { container } = renderPage()
     fill(container, 'wrong', 'new123', 'new123')
     fireEvent.submit(container.querySelector('form')!)

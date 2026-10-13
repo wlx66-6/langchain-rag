@@ -1,9 +1,9 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
 import ChatPage from './ChatPage'
-import { chatApi, getAccessToken } from '../lib/api'
+import { chatApi, getAccessToken, refreshAccessToken } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { renderWithProviders } from '../test/render'
 
 vi.mock('../lib/api', () => ({
   chatApi: {
@@ -14,12 +14,14 @@ vi.mock('../lib/api', () => ({
     renameConversation: vi.fn(),
   },
   getAccessToken: vi.fn(),
+  refreshAccessToken: vi.fn(),
 }))
 vi.mock('../lib/auth', () => ({ useAuth: vi.fn() }))
 
 const mockedChatApi = vi.mocked(chatApi)
 const mockedUseAuth = vi.mocked(useAuth)
 const mockedGetAccessToken = vi.mocked(getAccessToken)
+const mockedRefresh = vi.mocked(refreshAccessToken)
 
 /** 把若干 SSE 事件拼成一个流式 Response，模拟后端 /api/chat 的返回。 */
 function sseResponse(events: object[], status = 200): Response {
@@ -41,11 +43,7 @@ const START_EVENT = {
 }
 
 function renderPage() {
-  return render(
-    <MemoryRouter>
-      <ChatPage />
-    </MemoryRouter>,
-  )
+  return renderWithProviders(<ChatPage />)
 }
 
 async function ask(question: string) {
@@ -58,6 +56,7 @@ beforeEach(() => {
   mockedUseAuth.mockReturnValue({
     user: { id: 1, username: 'alice', is_admin: false },
     isAdmin: false,
+    loading: false,
     login: vi.fn(),
     logout: vi.fn(),
   })
@@ -83,6 +82,12 @@ describe('ChatPage 挂载', () => {
     renderPage()
     expect(await screen.findByText('会话一')).toBeTruthy()
     expect(screen.getByText('会话二')).toBeTruthy()
+  })
+
+  it('会话列表加载失败时用 toast 提示', async () => {
+    mockedChatApi.listConversations.mockRejectedValue(new Error('后端没起来'))
+    renderPage()
+    expect(await screen.findByText('后端没起来')).toBeTruthy()
   })
 })
 
@@ -127,9 +132,7 @@ describe('ChatPage 流式问答', () => {
     await waitFor(() => expect(mockedChatApi.listConversations).toHaveBeenCalledTimes(2))
   })
 
-  it('服务端返回 error 事件时弹出提示', async () => {
-    const alertMock = vi.fn()
-    vi.stubGlobal('alert', alertMock)
+  it('服务端返回 error 事件时用 toast 提示', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(sseResponse([START_EVENT, { type: 'error', data: '模型炸了' }])),
@@ -139,7 +142,25 @@ describe('ChatPage 流式问答', () => {
 
     await ask('会失败的问题')
 
-    await waitFor(() => expect(alertMock).toHaveBeenCalledWith('模型炸了'))
+    expect(await screen.findByText('模型炸了')).toBeTruthy()
+  })
+
+  it('401 时先刷新令牌再重试，不直接跳登录', async () => {
+    mockedRefresh.mockResolvedValue('fresh-token')
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('', { status: 401 }))
+      .mockResolvedValueOnce(sseResponse([START_EVENT, { type: 'token', data: '好的' }, { type: 'done' }]))
+    vi.stubGlobal('fetch', fetchMock)
+    renderPage()
+    await screen.findByText('欢迎使用知识库问答')
+
+    await ask('问题')
+
+    expect(await screen.findByText('好的')).toBeTruthy()
+    expect(mockedRefresh).toHaveBeenCalled()
+    const retryHeaders = (fetchMock.mock.calls[1][1] as RequestInit).headers
+    expect(retryHeaders).toMatchObject({ Authorization: 'Bearer fresh-token' })
   })
 
   it('回答为空时不发送空请求', async () => {
@@ -159,12 +180,13 @@ describe('ChatPage 会话切换', () => {
       { id: 3, title: '历史会话', updated_at: '2026-01-01' },
     ])
     mockedChatApi.getMessages.mockResolvedValue([
-      { id: 1, role: 'user', content: '之前的问题', citations: null },
+      { id: 1, role: 'user', content: '之前的问题', citations: null, created_at: '' },
       {
         id: 2,
         role: 'assistant',
         content: '之前的回答',
         citations: JSON.stringify([{ source: '旧文档.txt', content: '旧内容' }]),
+        created_at: '',
       },
     ])
     renderPage()
@@ -181,7 +203,7 @@ describe('ChatPage 会话切换', () => {
       { id: 3, title: '历史会话', updated_at: '2026-01-01' },
     ])
     mockedChatApi.getMessages.mockResolvedValue([
-      { id: 1, role: 'user', content: '之前的问题', citations: null },
+      { id: 1, role: 'user', content: '之前的问题', citations: null, created_at: '' },
     ])
     renderPage()
 
@@ -195,7 +217,6 @@ describe('ChatPage 会话切换', () => {
   })
 
   it('确认删除会话后调用删除接口', async () => {
-    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
     mockedChatApi.listConversations.mockResolvedValue([
       { id: 5, title: '待删除会话', updated_at: '2026-01-01' },
     ])
@@ -203,8 +224,69 @@ describe('ChatPage 会话切换', () => {
     renderPage()
 
     fireEvent.click(await screen.findByText('待删除会话'))
-    fireEvent.click(screen.getByRole('button', { name: '✕' }))
+    fireEvent.click(screen.getByRole('button', { name: '删除会话 待删除会话' }))
+
+    // 自研确认框：点「确定」后才真正删除
+    fireEvent.click(await screen.findByRole('button', { name: '确定' }))
 
     await waitFor(() => expect(mockedChatApi.deleteConversation).toHaveBeenCalledWith(5))
+  })
+
+  it('确认框点「取消」时不删除', async () => {
+    mockedChatApi.listConversations.mockResolvedValue([
+      { id: 5, title: '待删除会话', updated_at: '2026-01-01' },
+    ])
+    renderPage()
+
+    fireEvent.click(await screen.findByText('待删除会话'))
+    fireEvent.click(screen.getByRole('button', { name: '删除会话 待删除会话' }))
+    fireEvent.click(await screen.findByRole('button', { name: '取消' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(mockedChatApi.deleteConversation).not.toHaveBeenCalled()
+  })
+
+  it('切换会话时中止在途流，旧回答不会串进新会话', async () => {
+    const encoder = new TextEncoder()
+    const streamRef: { current: ReadableStreamDefaultController<Uint8Array> | null } = {
+      current: null,
+    }
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        streamRef.current = controller
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(START_EVENT)}\n\n`))
+      },
+    })
+    const fetchMock = vi.fn().mockImplementation((_url, init: RequestInit) => {
+      // 模拟 fetch 在 signal 被 abort 时以 AbortError 拒绝
+      return new Promise((resolve, reject) => {
+        init.signal?.addEventListener('abort', () => {
+          reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
+        })
+        resolve(new Response(body, { status: 200 }))
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    mockedChatApi.listConversations.mockResolvedValue([
+      { id: 3, title: '另一个会话', updated_at: '2026-01-01' },
+    ])
+    mockedChatApi.getMessages.mockResolvedValue([
+      { id: 1, role: 'user', content: '新会话的问题', citations: null, created_at: '' },
+    ])
+
+    renderPage()
+    await screen.findByText('欢迎使用知识库问答')
+    await ask('正在流式回答的问题')
+
+    // 流还没结束就切走
+    fireEvent.click(await screen.findByText('另一个会话'))
+
+    expect(await screen.findByText('新会话的问题')).toBeTruthy()
+    await waitFor(() => expect(screen.queryByText('正在流式回答的问题')).toBeNull())
+    // 请求确实被 abort 了
+    const signal = (fetchMock.mock.calls[0][1] as RequestInit).signal
+    expect(signal?.aborted).toBe(true)
+    streamRef.current?.close()
   })
 })
