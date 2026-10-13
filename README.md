@@ -209,6 +209,11 @@ npm run dev
 bash scripts/ci.sh        # 与 .github/workflows/ci.yml 完全一致的检查步骤
 ```
 
+> **关于托管 CI 的实情**：本仓库托管在 **Gitee**，而 `.github/workflows/ci.yml` 是
+> **GitHub Actions** 语法——Gitee 不会执行它。也就是说那份配置目前是「可移植的检查定义」，
+> 而非正在运行的流水线。**实际的质量门禁是本地的 `scripts/ci.sh`**（上面那条命令），
+> 它跑的就是同一套步骤。若要真在托管平台上自动化，需补一份 Gitee Go（`.workflow/`）配置。
+
 ### 关于集成测试
 
 需要真实向量库 / 真实大模型调用（会联网、产生费用）的用例被标记为 `integration` / `e2e`，
