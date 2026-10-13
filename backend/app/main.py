@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.core.security import hash_password
 from app.database import Base, SessionLocal, engine
+from app.logging_config import setup_logging
 from app.models import User
 from app.routers import auth, chat, knowledge
 
@@ -48,9 +49,15 @@ def seed_admin() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    setup_logging()  # 统一日志格式，之后各处 logger 的输出才可读
     settings.validate_startup_config()  # 必填配置缺失时直接失败，不静默降级
     Base.metadata.create_all(bind=engine)  # 自动建表
     seed_admin()
+    if settings.mock_llm:
+        logger.warning(
+            "MOCK_LLM 已开启：问答接口将使用假大模型并跳过远程重排，"
+            "仅供本地压测使用，生产环境务必保持关闭。"
+        )
     yield
 
 
