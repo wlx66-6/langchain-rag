@@ -20,10 +20,14 @@ frontend/dist/
 .idea/
 .vscode/
 
-# 测试报告（每次跑测试都会重新生成的产物，不入库）
+# 测试报告与覆盖率产物（每次跑测试都会重新生成，不入库）
 test-report.md
 backend/htmlcov/
 backend/.coverage
+frontend/coverage/
+
+# TypeScript 增量编译缓存
+*.tsbuildinfo
 
 # Issue / 设计草稿（mattpocock 技能本地 markdown 区）。
 # 忽略后既不进 Git，也不计入 gate.mjs 的代码指纹，避免写 issue 就把通过票顶掉。

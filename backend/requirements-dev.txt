@@ -1,0 +1,10 @@
+# 开发与测试专用依赖（生产部署不需要安装这一份）
+# 用法：pip install -r requirements-dev.txt
+-r requirements.txt
+
+# 测试框架与覆盖率
+pytest
+pytest-cov
+
+# 测试客户端（FastAPI TestClient 依赖 httpx 才能发起请求）
+httpx
