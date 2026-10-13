@@ -67,4 +67,6 @@ class KnowledgeDocument(Base):
     file_type: Mapped[str] = mapped_column(String(32))
     status: Mapped[str] = mapped_column(String(16), default="ready")  # ready / failed
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)  # 切成了几段
+    # 原文件在磁盘上的落盘路径：删文档时据此一并清理，避免留下无人认领的垃圾文件
+    stored_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)

@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     chroma_dir: Path = BASE_DIR / "data" / "chroma"
     upload_dir: Path = BASE_DIR / "data" / "uploads"
     sqlite_url: str = f"sqlite:///{(BASE_DIR / 'data' / 'app.db').as_posix()}"
+    max_upload_size: int = 20 * 1024 * 1024  # 单个上传文件的大小上限（字节），默认 20MB
 
     # ---- 安全 ----
     # JWT_SECRET 必须由 .env 提供，代码中不设默认值：启动时由 validate_startup_config()
