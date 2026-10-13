@@ -103,21 +103,81 @@ class TestChatPersistence:
         assert convs[0]["title"] == "耳机续航多久？"
 
 
+class _BoomChain:
+    """一个 astream 立即抛错的假链，用来模拟生成阶段崩溃。"""
+
+    def __init__(self, message: str = "模拟模型异常"):
+        self._message = message
+
+    def astream(self, _input):  # noqa: ANN001
+        message = self._message
+
+        async def _gen():
+            raise RuntimeError(message)
+            yield  # pragma: no cover  —— 让 _gen 成为生成器
+
+        return _gen()
+
+
+class _PartialBoomChain:
+    """先吐两段正常内容，再抛错，用来验证「已生成的部分内容会被保存」。"""
+
+    def astream(self, _input):  # noqa: ANN001
+        async def _gen():
+            from langchain_core.messages import AIMessageChunk
+
+            yield AIMessageChunk(content="已经")
+            yield AIMessageChunk(content="生成的一半")
+            raise RuntimeError("模拟模型中途异常")
+
+        return _gen()
+
+
 class TestChatFailure:
     def test_generation_error_emits_error_event(self, client, normal_token, bearer, stub_rag, monkeypatch):
         """生成阶段抛异常时，应向前端推一条 error 事件而不是让连接静默中断。"""
         from app.services import rag
-
-        class _BoomChain:
-            def astream(self, _input):  # noqa: ANN001
-                async def _gen():
-                    raise RuntimeError("模拟模型异常")
-                    yield  # pragma: no cover  —— 让 _gen 成为生成器
-
-                return _gen()
 
         monkeypatch.setattr(rag, "build_answer_chain", lambda: _BoomChain())
 
         events = _stream_chat(client, bearer(normal_token), "会失败的问题")
         assert "error" in _types(events)
         assert "done" not in _types(events)
+
+    def test_error_event_is_desensitized(self, client, normal_token, bearer, stub_rag, monkeypatch):
+        """错误事件不能把原始异常（可能含路径/密钥）透给前端，只给统一文案 + code。"""
+        from app.services import rag
+
+        secret = "C:/secret/path/api_key=sk-abcdef123456"
+        monkeypatch.setattr(rag, "build_answer_chain", lambda: _BoomChain(secret))
+
+        events = _stream_chat(client, bearer(normal_token), "会失败的问题")
+        error = next(e for e in events if e["type"] == "error")
+
+        assert error["code"] == "generation_failed"
+        assert error["data"] == "回答生成失败，请稍后重试"
+        assert secret not in json.dumps(events, ensure_ascii=False)
+
+    def test_failure_still_persists_assistant_message(self, client, normal_token, bearer, stub_rag, monkeypatch):
+        """生成失败也要落一条客服消息，避免会话里留下悬空的提问。"""
+        from app.services import rag
+
+        monkeypatch.setattr(rag, "build_answer_chain", lambda: _BoomChain())
+
+        events = _stream_chat(client, bearer(normal_token), "会失败的问题")
+        conv_id = events[0]["data"]["conversation_id"]
+
+        msgs = client.get(f"/api/conversations/{conv_id}/messages", headers=bearer(normal_token)).json()
+        assert [m["role"] for m in msgs] == ["user", "assistant"]
+
+    def test_failure_keeps_partial_answer(self, client, normal_token, bearer, stub_rag, monkeypatch):
+        """中途失败时，已经把内容流出去的这一部分不能丢。"""
+        from app.services import rag
+
+        monkeypatch.setattr(rag, "build_answer_chain", lambda: _PartialBoomChain())
+
+        events = _stream_chat(client, bearer(normal_token), "会中途失败的问题")
+        conv_id = events[0]["data"]["conversation_id"]
+
+        msgs = client.get(f"/api/conversations/{conv_id}/messages", headers=bearer(normal_token)).json()
+        assert msgs[1]["content"] == "已经生成的一半"
