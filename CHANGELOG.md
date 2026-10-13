@@ -29,6 +29,8 @@
 - **接口清单与交互式文档**：README 附 15 个接口说明，运行时可用 `/docs` 查阅。
 - **上传大小限制**（`MAX_UPLOAD_SIZE`，默认 20MB，超限返回 413）。
 - **列表接口分页**：会话、消息、知识文档列表支持 `limit` / `offset`。
+- **首字延迟实测工具**：`loadtest/measure_latency.py`（区分「检索链路耗时 / 首字延迟 / 总时长」，
+  并分测首轮与追问两种场景）与配套示例文档 `loadtest/sample_doc.md`；跑完自动清理测试数据。
 
 ### Fixed
 
@@ -63,6 +65,10 @@
 - 依赖版本锁定（`requirements.txt` 全部 `==`），新增 `requirements-dev.txt`。
 - 依赖的代码全部经 ruff format + Prettier 统一格式化。
 - 压测生成物（`report_*.html`、`results_*.csv`）与 `test-report.md` 移出 git 跟踪。
+- ruff 检查范围从 `backend/` 扩展到 `loadtest/`（此前该目录下的 Python 不在 lint 范围内），
+  README 与 `docs/项目要点速览.md` 补上首字延迟实测数据。
+- bge-m3 下载补充 ModelScope（魔搭）兜底说明：实测 `hf-mirror.com` 在部分网络下会连接超时，
+  仅依赖 `HF_ENDPOINT` 无法保证可下载。
 
 ### Removed
 

@@ -160,7 +160,18 @@ npm run dev
 
 ### 常见问题
 
-- **首次提问/上传很慢**：首次会自动下载 bge-m3 模型（约 2GB）。国内默认走 `HF_ENDPOINT` 镜像加速。
+- **首次提问/上传很慢**：首次会自动下载 bge-m3 模型（约 2.3GB）。默认走 `HF_ENDPOINT` 镜像加速；
+  若镜像不通（实测 `hf-mirror.com` 在部分网络下会超时），改用 **ModelScope（魔搭）** 下载后
+  把 `EMBEDDING_MODEL` 指向本地目录，见下。
+
+  ```bash
+  # 1) 从魔搭下载（国内可达）
+  venv\Scripts\python.exe -m pip install modelscope
+  venv\Scripts\python.exe -c "from modelscope import snapshot_download; print(snapshot_download('BAAI/bge-m3', cache_dir=r'D:\models\bge-m3'))"
+
+  # 2) 把打印出的路径填进 backend/.env（注意用正斜杠或双反斜杠）
+  #    EMBEDDING_MODEL=D:/models/bge-m3/models/BAAI--bge-m3/snapshots/master
+  ```
 - **提示 API Key 无效**：检查 `backend/.env` 的密钥与百炼平台开通情况。
 - **端口被占用**：改 `start.bat` 的 `--port` 与 `frontend/vite.config.ts`。
 - **换更便宜/更强的模型**：改 `.env` 的 `QWEN_MODEL`（`qwen-turbo` / `qwen-plus` / `qwen-max`）。
@@ -220,6 +231,26 @@ pytest -m e2e            # 端到端（真实调用百炼，产生费用）
 
 > **重要：以下数据区分「真实模式」与「mock 模式」，请勿混用。**
 > mock 模式下问答使用假大模型并跳过远程重排，只测「SQLite + bge-m3 向量化 + Chroma 检索」这层本地骨架。
+
+### 单请求延迟（串行，含大模型与远程重排）
+
+「首字延迟」拆成三个数，因为它们回答的是不同问题：服务端要先完成「追问改写 → 向量检索 → 重排」
+才会发出首个 SSE 事件，所以**到首个事件的时间**衡量检索链路，**到首个 `token` 的时间**才是
+用户感知的「等多久开始出字」。
+
+| 场景 | 检索链路耗时 | **首字延迟** | 总时长 |
+|---|---:|---:|---:|
+| 首轮提问（新会话、无历史） | 0.20 s | **0.60 s** | 2.4–5.2 s |
+| 同会话追问（有历史，多一次改写调用） | 0.91 s | **1.28 s** | 1.7–4.4 s |
+
+追问比首轮慢近一倍：有历史时「追问改写」会真实调用一次大模型。复现：
+
+```bash
+# 后端已启动且 bge-m3 就位；脚本会自动上传示例文档并在结束时清理
+venv\Scripts\python.exe loadtest\measure_latency.py --doc loadtest\sample_doc.md
+```
+
+> 以上为单机、CPU 推理、串行单请求的数字。**并发下会显著恶化**，见下方压测。
 
 ### 真实端到端（8 并发用户，含大模型与远程重排）
 
@@ -289,7 +320,7 @@ vibecoding_langchain/
 │       ├── components/     # RequireAuth 路由守卫
 │       ├── lib/            # api / auth / sse / errors / ui / types
 │       └── styles/         # base(设计变量) / components / pages
-├── loadtest/               # Locust 压测脚本与报告
+├── loadtest/               # Locust 压测脚本与报告、首字延迟测量脚本
 ├── scripts/                # ci.sh（质量总检）、gate.mjs（提交门禁）
 ├── docs/                   # ADR、门禁说明、改造规划（历史存档）
 ├── .claude/                # Claude 子代理与技能（质量门禁工具链）
