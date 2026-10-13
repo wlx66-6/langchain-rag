@@ -155,7 +155,6 @@ export default function ChatPage() {
     const seq = ++streamSeq.current
     const controller = new AbortController()
     abortRef.current = controller
-    let finalSources: Citation[] = []
 
     try {
       const result = await streamChat({
@@ -168,7 +167,6 @@ export default function ChatPage() {
             setActiveConvId(convId) // 后端新建了会话，记下它的 ID
             refreshConversations()
           }
-          finalSources = citations
           setSources(citations)
         },
         onToken: (accumulated) => {
