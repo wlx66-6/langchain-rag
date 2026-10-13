@@ -2,7 +2,6 @@
 import asyncio
 
 from langchain_core.documents import Document
-import pytest
 
 from app.config import settings
 from app.services import rag

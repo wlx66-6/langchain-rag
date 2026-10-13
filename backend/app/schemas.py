@@ -3,7 +3,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-
 # ============ 账号相关 ============
 
 class RegisterRequest(BaseModel):

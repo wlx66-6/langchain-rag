@@ -23,7 +23,9 @@ def get_current_user(
     try:
         payload = decode_token(token)
     except jwt.PyJWTError:
-        raise cred_exc
+        # 令牌无效属于预期内的鉴权失败，用 from None 掐断异常链，
+        # 避免把 jwt 内部的解密细节带进日志
+        raise cred_exc from None
 
     if payload.get("type") != "access":
         raise cred_exc

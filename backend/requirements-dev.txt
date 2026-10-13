@@ -3,8 +3,11 @@
 -r requirements.txt
 
 # 测试框架与覆盖率
-pytest
-pytest-cov
+pytest==9.1.1
+pytest-cov==7.1.0
 
 # 测试客户端（FastAPI TestClient 依赖 httpx 才能发起请求）
-httpx
+httpx==0.28.1
+
+# 代码检查与格式化
+ruff==0.17.0

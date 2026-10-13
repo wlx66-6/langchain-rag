@@ -4,7 +4,8 @@
 问答接口就会改用这个假模型生成回答，从而只压「SQLite + 词向量 + Chroma 检索」这条本地骨架，
 不调用百炼（qwen 改写/生成、重排），既省钱，又不会被百炼的速率限制干扰压测结果。
 """
-from typing import Any, Iterator, Optional
+from collections.abc import Iterator
+from typing import Any
 
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -30,8 +31,8 @@ class MockChatModel(BaseChatModel):
     def _generate(
         self,
         messages: list[BaseMessage],
-        stop: Optional[list[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> ChatResult:
         # 非流式路径：一次性返回完整固定回答（本项目假模式里基本用不到，但保证接口完整）
@@ -42,8 +43,8 @@ class MockChatModel(BaseChatModel):
     def _stream(
         self,
         messages: list[BaseMessage],
-        stop: Optional[list[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
         # 流式路径：把固定回答切成若干小块逐块吐出，模拟真模型的 token 流

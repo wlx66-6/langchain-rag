@@ -26,7 +26,6 @@ from app.main import app  # noqa: E402
 from app.models import User  # noqa: E402
 from app.routers import chat as chat_router  # noqa: E402
 
-
 # ============ 数据库夹具 ============
 
 @pytest.fixture()

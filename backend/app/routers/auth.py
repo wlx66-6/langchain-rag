@@ -57,7 +57,8 @@ def refresh(data: RefreshRequest, db: Session = Depends(get_db)):
     try:
         payload = decode_token(data.refresh_token)
     except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="刷新令牌无效或已过期")
+        # 同上：预期内的鉴权失败，掐断异常链
+        raise HTTPException(status_code=401, detail="刷新令牌无效或已过期") from None
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="刷新令牌无效")
     user = db.get(User, int(payload["sub"]))

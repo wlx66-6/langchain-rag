@@ -1,0 +1,33 @@
+# 后端工程配置。这里只放工具配置（ruff），运行期依赖仍由 requirements.txt 管理。
+#
+# 常用命令（在 backend 目录下执行，用仓库根目录的 venv）：
+#   ..\venv\Scripts\ruff.exe check .        # 静态检查
+#   ..\venv\Scripts\ruff.exe check --fix .  # 自动修复可修复的问题
+#   ..\venv\Scripts\ruff.exe format .       # 格式化
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+# 虚拟环境、缓存、数据目录不属于源码
+exclude = [".venv", "venv", "__pycache__", "data", ".pytest_cache", "htmlcov"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle 错误与警告
+# F:   pyflakes（未使用的导入/变量、未定义名称等）
+# I:   isort（导入排序）
+# UP:  pyupgrade（用新语法替换过时写法）
+# B:   flake8-bugbear（常见坑与可疑写法）
+# SIM: flake8-simplify（可简化的写法）
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "E501",  # 行宽交给 formatter 处理，中文注释按字符数算容易被误报
+    "B008",  # FastAPI 的 Depends()/File() 必须写在默认值位置，是框架约定
+]
+
+[tool.ruff.lint.per-file-ignores]
+# 测试里为了方便常直接使用断言与内部函数，放宽部分规则
+"tests/**" = ["S101", "B011"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
