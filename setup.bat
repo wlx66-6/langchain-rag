@@ -52,7 +52,11 @@ echo.
 echo [4/4] All dependencies installed successfully!
 echo.
 echo Notices:
-echo   1. Make sure DASHSCOPE_API_KEY is filled in backend\.env
+echo   1. Copy backend\.env.example to backend\.env, then fill in:
+echo        DASHSCOPE_API_KEY  - your Bailian API key
+echo        JWT_SECRET         - a random string, generate with:
+echo                             python -c "import secrets; print(secrets.token_urlsafe(48))"
+echo      (start.bat checks these and will refuse to launch if they are missing)
 echo   2. First upload/question downloads the bge-m3 model (about 2GB).
 echo   3. Then double-click start.bat to launch the system.
 echo.

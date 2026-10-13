@@ -22,16 +22,30 @@ cd frontend && npm install
 
 ---
 
-## 二、开发流程
+## 二、分支约定
 
-1. 从 `main` 切出分支，命名建议 `feat/xxx`、`fix/xxx`、`docs/xxx`。
+- **默认分支为 `master`**。这是仓库创建时的历史命名，且远端（Gitee）默认分支也是它；
+  为保持本地与远端一致，**没有改为 `main`**（改名需要同时调整远端默认分支设置，属于一次性运维操作）。
+  若将来要做，命令是：
+
+  ```bash
+  git branch -m master main
+  git push -u origin main
+  git push origin --delete master    # 之后还需在 Gitee 仓库设置里把默认分支改为 main
+  ```
+
+- 功能分支命名建议 `feat/xxx`、`fix/xxx`、`docs/xxx`、`chore/xxx`。
+
+## 三、开发流程
+
+1. 从 `master` 切出分支。
 2. 改代码，**同步补测试**（见下）。
 3. 本地跑全套检查：`bash scripts/ci.sh`（格式 + 静态检查 + 单测 + 构建）。
 4. 提交（Conventional Commits，见下）。
 
 ---
 
-## 三、代码风格
+## 四、代码风格
 
 风格由工具强制，不靠人工记忆：
 
@@ -58,7 +72,7 @@ cd frontend && npm run lint && npm run format
 
 ---
 
-## 四、测试
+## 五、测试
 
 - 后端：`cd backend && ../venv/Scripts/python.exe -m pytest -q`
   新增逻辑请放到 `backend/tests/test_*.py`；需要真实向量库/大模型的用例请标
@@ -71,7 +85,7 @@ cd frontend && npm run lint && npm run format
 
 ---
 
-## 五、提交信息规范（Conventional Commits）
+## 六、提交信息规范（Conventional Commits）
 
 格式：`<type>(<scope>): <描述>`，描述用中文、祈使语气、一句话说清「改了什么」。
 
@@ -98,7 +112,7 @@ docs: 补齐 CONTEXT/ADR/gate 文档并修复失效的技能引用
 
 ---
 
-## 六、质量门禁（可选）
+## 七、质量门禁（可选）
 
 本项目内置提交门禁（单元测试 + 质量检查双通过才放行）。启用：
 
@@ -110,7 +124,7 @@ node scripts/gate.mjs install    # 设置 core.hooksPath，之后 pre-commit 自
 
 ---
 
-## 七、改动文档
+## 八、改动文档
 
 - 架构/技术选型的**重要决策**请新增一条 ADR（`docs/adr/NNNN-标题.md`），说明背景、决策、理由、后果。
 - 面向用户的变更记入 [CHANGELOG.md](CHANGELOG.md)。
