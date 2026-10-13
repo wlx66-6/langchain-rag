@@ -21,6 +21,8 @@ class TestGetLlm:
     def test_normal_mode_returns_real_model(self, monkeypatch):
         # 正常模式下不返回假模型（真模型的具体类型这里不细化，避免依赖百炼网络）
         monkeypatch.setattr(settings, "mock_llm", False)
+        # ChatTongyi 构造时会校验 API Key，这里给个占位值让测试不依赖本地 .env
+        monkeypatch.setenv("DASHSCOPE_API_KEY", "test-placeholder-key")
         assert not isinstance(rag.get_llm(), MockChatModel)
 
 
