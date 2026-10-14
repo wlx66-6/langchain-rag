@@ -1,8 +1,8 @@
 # 持续集成：每次 push / PR 自动跑「格式 + 静态检查 + 单元测试 + 构建」。
 #
-# 本仓库当前托管在 Gitee，该工作流是通用定义（GitHub Actions 语法，也是多数托管平台
-# 与自建 runner 的通用做法）。在不跑托管 CI 的环境下，用 `bash scripts/ci.sh`
-# 可在本地复现完全相同的检查步骤。
+# 本仓库同时推送到 Gitee（origin）与 GitHub（github）。该工作流是 GitHub Actions 语法，
+# 因此只在 GitHub 侧真实执行（每次 push 到 master 都会自动跑一遍）；Gitee 侧不执行它，
+# 那边仍以 `bash scripts/ci.sh` 为质量门禁——两者步骤完全一致，可在本地复现。
 name: CI
 
 on:
