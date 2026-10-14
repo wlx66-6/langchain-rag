@@ -335,7 +335,7 @@ Langchain RAG/
 │       └── styles/         # base(设计变量) / components / pages
 ├── loadtest/               # Locust 压测脚本与报告、首字延迟测量脚本
 ├── scripts/                # ci.sh（质量总检）、gate.mjs（提交门禁）
-├── docs/                   # ADR、门禁说明、项目要点速览
+├── docs/                   # ADR、门禁说明、子代理文档
 ├── .claude/                # Claude 子代理与技能（质量门禁工具链）
 ├── CONTEXT.md              # 领域术语表
 ├── setup.bat / start.bat   # Windows 一键安装 / 启动
