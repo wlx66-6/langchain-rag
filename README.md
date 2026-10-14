@@ -119,11 +119,18 @@
 
 ## 五、快速开始（Windows）
 
-### 0. 准备
+### 0. 获取代码与准备
 
-1. [Python 3.10+](https://www.python.org/)（安装时勾选 *Add to PATH*）
-2. [Node.js](https://nodejs.org/)
-3. 注册[阿里云百炼](https://bailian.console.aliyun.com/)并开通通义千问，获取 **API Key**
+1. 克隆仓库并进入目录：
+
+   ```bash
+   git clone https://github.com/wlx66-6/langchain-rag.git
+   cd langchain-rag
+   ```
+
+2. [Python 3.10+](https://www.python.org/)（安装时勾选 *Add to PATH*）
+3. [Node.js](https://nodejs.org/)
+4. 注册[阿里云百炼](https://bailian.console.aliyun.com/)并开通通义千问，获取 **API Key**
 
 ### 1. 配置环境变量
 
@@ -209,10 +216,11 @@ npm run dev
 bash scripts/ci.sh        # 与 .github/workflows/ci.yml 完全一致的检查步骤
 ```
 
-> **关于托管 CI 的实情**：本仓库托管在 **Gitee**，而 `.github/workflows/ci.yml` 是
-> **GitHub Actions** 语法——Gitee 不会执行它。也就是说那份配置目前是「可移植的检查定义」，
-> 而非正在运行的流水线。**实际的质量门禁是本地的 `scripts/ci.sh`**（上面那条命令），
-> 它跑的就是同一套步骤。若要真在托管平台上自动化，需补一份 Gitee Go（`.workflow/`）配置。
+> **关于托管 CI 的实情**：本仓库同时推送到两个远端——**Gitee**（`origin`）与
+> **GitHub**（`github`）。`.github/workflows/ci.yml` 是 **GitHub Actions** 语法，
+> 因此**只在 GitHub 那一侧真实执行**：每次 push 到 `master` 都会自动跑一遍同一套步骤。
+> Gitee 不执行它，所以 Gitee 侧的质量门禁仍然是本地的 `scripts/ci.sh`（上面那条命令）。
+> 若要让 Gitee 侧也自动化，需补一份 Gitee Go（`.workflow/`）配置。
 
 ### 关于集成测试
 
@@ -303,7 +311,7 @@ venv\Scripts\python.exe loadtest\measure_latency.py --doc loadtest\sample_doc.md
 ## 九、项目结构
 
 ```
-vibecoding_langchain/
+Langchain RAG/
 ├── backend/
 │   ├── app/
 │   │   ├── routers/        # HTTP 层：auth / chat(含 SSE) / knowledge

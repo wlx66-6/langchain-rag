@@ -2,7 +2,8 @@
 
 Issues and specs for this repo live as markdown files in `.scratch/`.
 
-> Note: this repo's remote is Gitee (`git@gitee.com:wanlixing123/vibecoding_langchain`).
+> Note: this repo is pushed to two remotes — Gitee (`git@gitee.com:wanlixing123/vibecoding_langchain`,
+> `origin`) and GitHub (`git@github.com:wlx66-6/langchain-rag`, `github`).
 > The engineering skills do **not** use `gh` or `glab` here — all issue reads/writes go
 > through the local markdown convention below.
 
