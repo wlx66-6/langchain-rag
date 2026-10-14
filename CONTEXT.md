@@ -69,4 +69,3 @@
 
 - 架构与技术选型：`README.md`、`docs/adr/`
 - 质量门禁怎么用：`docs/gate.md`
-- 改造规划（历史存档）：`docs/改造规划书.md`
